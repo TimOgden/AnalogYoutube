@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 2rem;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 1.5rem;
+        }
+
+        .thumbnail {
+            max-width: 600px;
+            width: 100%;
+            height: auto;
+            margin-bottom: 2rem;
+        }
+
+        .qr-code img {
+            width: 250px;
+            height: 250px;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ title }}</h1>
+
+    <img
+        class="thumbnail"
+        src="{{ thumbnail }}"
+        alt="Thumbnail for {{ title }}"
+    >
+
+    <div class="qr-code">
+        <img
+            src="{{ svg_url }}"
+            alt="QR code for {{ title }}"
+        >
+    </div>
+</body>
+</html>

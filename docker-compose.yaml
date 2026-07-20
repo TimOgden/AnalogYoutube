@@ -1,0 +1,22 @@
+services:
+  analog-youtube:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    container_name: analog-youtube
+
+    ports:
+    - "8000:8000"
+
+    environment:
+      DATABASE_PATH: /app/data/analog-youtube.db
+      MEDIA_ROOT: /app/media
+      PUBLIC_BASE_URL: http://analog-youtube.local:8000
+    
+    volumes:
+      - ./data:/app/data
+      - ./media:/app/media
+
+    restart: unless-stopped
+  
