@@ -10,6 +10,8 @@ import datetime
 import secrets
 import logging
 
+from src import database, download_utils
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,7 +27,7 @@ class YoutubeVideo:
     title: str
     url: str
     thumbnail: Image
-    youtube_video_id: str
+    yt: YouTube
 
 
 class DownloadStatus(enum.Enum):
@@ -86,21 +88,31 @@ def get_youtube_video(url: str) -> YoutubeVideo:
     thumbnail_response.raise_for_status()
 
     thumbnail = Image.open(io.BytesIO(thumbnail_response.content))
-    video_id = YouTube(url).video_id
+    yt = YouTube(url, 'WEB')
     return YoutubeVideo(
         url=url,
         title=data["title"],
         thumbnail=thumbnail,
-        youtube_video_id=video_id
+        yt=yt
     )
 
+
+def _validate_youtube_card_download_status(card: YoutubeCard) -> None:
+    if not card.thumbnail_path.exists() or not card.video_path.exists():
+        card.download_status = DownloadStatus.PENDING
 
 def get_youtube_card_by_id(video_id: str, conn: sqlite3.Connection) -> YoutubeCard | None:
     row = conn.execute("""SELECT * from videos where video_id=?""", (video_id,)).fetchone()
     if row is None:
         return None
     
-    return YoutubeCard.from_row(row)
+    card = YoutubeCard.from_row(row)
+    _validate_youtube_card_download_status(card)
+    return card
+
+
+def update_download_status(conn: sqlite3.Connection, video_id: str, download_status: DownloadStatus) -> None:
+    conn.execute("""UPDATE videos SET download_status=? WHERE video_id = ?""", (download_status.value, video_id))
 
 
 def create_or_update_youtube_card(conn: sqlite3.Connection,
@@ -135,7 +147,7 @@ def create_or_update_youtube_card(conn: sqlite3.Connection,
             updated_at = excluded.updated_at
         """,
         (
-            youtube_video.youtube_video_id,
+            youtube_video.yt.video_id,
             youtube_video.url,
             youtube_video.title,
             str(video_path),
@@ -146,31 +158,65 @@ def create_or_update_youtube_card(conn: sqlite3.Connection,
         ),
     )
     
-    return get_youtube_card_by_id(youtube_video.youtube_video_id, conn)
+    return get_youtube_card_by_id(youtube_video.yt.video_id, conn)
 
 
-def download_youtube_video(video: YoutubeVideo, conn: sqlite3.Connection) -> YoutubeCard:
-    video_id = video.youtube_video_id
+def download_youtube_video(video: YoutubeVideo) -> None:
+    video_id = video.yt.video_id
+    if video is None:
+        raise ValueError(f'Unknown video: {video_id}')
+    
     video_filepath = pathlib.Path('media') / 'videos' / f'youtube_{video_id}.mp4'
     video_filepath.parent.mkdir(parents=True, exist_ok=True)
     thumbnail_filepath = pathlib.Path('media') / 'thumbnails' / f'youtube_{video_id}.png'
     thumbnail_filepath.parent.mkdir(parents=True, exist_ok=True)
 
     logger.info(f'Downloading youtube video "{video.title}"...')
-    yt = YouTube(video.url).streams.filter(res='1080p', file_extension='mp4')\
-        .order_by('resolution').desc().first()
-    download_status = DownloadStatus.PENDING
     try:
-        yt.download(output_path=video_filepath.parent, filename=video_filepath.name)
-        download_status = DownloadStatus.READY
+        download_utils.download_youtube_video(video.url, video_filepath)
         logger.info(f'Successfully downloaded youtube video "{video.title}" to `{video_filepath}`.')
     except Exception as e:
-        download_status = DownloadStatus.FAILED
         logger.error(e)
         logger.error(f'Failed to download from youtube: {video}')
     
     video.thumbnail.save(thumbnail_filepath)
     logger.info(f'Successfully saved thumbnail image for youtube video "{video.title}" to `{thumbnail_filepath}`.')
 
-    video_card = create_or_update_youtube_card(conn, video, video_filepath, thumbnail_filepath, download_status)
-    return video_card
+
+def download_video_worker(video: YoutubeVideo) -> None:
+    try:
+        with database.get_connection() as conn:
+            video_id = video.yt.video_id
+            video_card = get_youtube_card_by_id(
+                video_id=video_id,
+                conn=conn,
+            )
+
+            if video_card is None:
+                return
+
+            if video_card.download_status == DownloadStatus.READY:
+                return
+            
+            update_download_status(
+                conn=conn,
+                video_id=video_id,
+                download_status=DownloadStatus.DOWNLOADING,
+            )
+            download_youtube_video(video)
+            update_download_status(
+                conn=conn,
+                video_id=video_id,
+                download_status=DownloadStatus.READY
+            )
+    except Exception as e:
+        logger.error(e)
+        
+        logger.error(f'Download failed for video {video_id}')
+        with database.get_connection() as conn:
+            update_download_status(
+                conn=conn,
+                video_id=video_id,
+                download_status=DownloadStatus.FAILED,
+            )
+        raise e

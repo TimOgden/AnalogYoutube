@@ -17,6 +17,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./media:/app/media
+      - ./secrets/youtube-cookies.txt:/run/secrets/youtube-cookies.txt:ro
 
     restart: unless-stopped
   

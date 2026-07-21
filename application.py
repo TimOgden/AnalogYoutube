@@ -9,8 +9,12 @@ import logging
 from src import youtube_utils, qr_generator_utils
 from src import database
 
+from concurrent.futures import ThreadPoolExecutor
+
 from fastapi import FastAPI, Form, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
+
+download_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='youtube-download')
 
 logging.basicConfig(
     level=logging.INFO,
@@ -74,10 +78,14 @@ def generate(urls: str = Form(...)) -> StreamingResponse:
             html_files = []
             for url in video_urls:
                 video = youtube_utils.get_youtube_video(url)
-                video_card = youtube_utils.get_youtube_card_by_id(video.youtube_video_id, conn)
+                video_card = youtube_utils.get_youtube_card_by_id(video.yt.video_id, conn)
 
-                if video_card is None or video_card.download_status != youtube_utils.DownloadStatus.READY:
-                    video_card = youtube_utils.download_youtube_video(video, conn)  # TODO: kick off thread
+                if video_card is None:
+                    video_card = youtube_utils.create_or_update_youtube_card(conn, video, video_path=None, thumbnail_path=None,
+                                                                             download_status=None)
+                
+                if video_card.download_status != youtube_utils.DownloadStatus.READY:
+                    download_executor.submit(youtube_utils.download_video_worker, video)
                 else:
                     logger.info(f'Skipping download of youtube video "{video.title}", already downloaded.')
 
