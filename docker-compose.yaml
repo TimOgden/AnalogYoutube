@@ -1,7 +1,6 @@
 services:
   web:
-    build:
-    context: .
+    build: .
     container_name: analog-youtube-web
     ports:
       - "8000:8000"
@@ -15,7 +14,7 @@ services:
 
     devices:
     - /dev/input:/dev/input
-    
+
     environment:
       PLAY_ENDPOINT: http://web:8000/api/play
     
