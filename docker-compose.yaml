@@ -1,21 +1,24 @@
 services:
-  analog-youtube:
+  web:
     build:
-      context: .
-      dockerfile: Dockerfile
-      ports:
-        - "8000:8000"
-    
-    container_name: analog-youtube
-
+    context: .
+    container_name: analog-youtube-web
     ports:
-    - "8000:8000"
-
-    environment:
-      PUBLIC_BASE_URL: http://analog-youtube.local:8000
-      PRIVATE_BASE_URL: http://localhost:8000
-    
-    volumes:
-
+      - "8000:8000"
     restart: unless-stopped
+    
+  scanner:
+    build: .
+    container_name: analog-youtube-scanner
+    command: python src/qr_listener/listener.py
+    restart: unless-stopped
+
+    devices:
+    - /dev/input:/dev/input
+    
+    environment:
+      PLAY_ENDPOINT: http://web:8000/api/play
+    
+    depends_on:
+      - web
   

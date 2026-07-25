@@ -1,5 +1,4 @@
 import io
-import os
 import re
 import pathlib
 import qrcode
@@ -8,7 +7,6 @@ import base64
 from src import youtube_utils
 from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup
-from urllib.parse import urlencode
 
 
 PLAYER_BASE = 'AY'
@@ -64,7 +62,7 @@ def populate_qr_code_template(video: youtube_utils.YoutubeVideo, output_dir: pat
         autoescape=True,
     )
 
-    template = env.get_template("video.html.j2")
+    template = env.get_template("video_qr.html.j2")
 
     thumbnail_data_uri = image_to_data_uri(video.thumbnail)
     svg_path = f'AY:{video.video_id}'

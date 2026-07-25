@@ -1,15 +1,15 @@
 import io
 import pathlib
-import re
 import tempfile
 import zipfile
 
 import logging
 
 from fastapi.templating import Jinja2Templates
-from src import youtube_utils, qr_generator_utils
+from src.qr_listener import qr_generator_utils
+from src import youtube_utils
 
-from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, StreamingResponse
 from dotenv import load_dotenv
 
@@ -91,21 +91,4 @@ def generate(urls: str = Form(...)) -> StreamingResponse:
             "Content-Disposition":
                 'attachment; filename="youtube-qr-codes.zip"'
         },
-    )
-
-
-@app.get('/player', response_class=HTMLResponse)
-def play_video(request: Request, v: str) -> str:
-    if not re.fullmatch(r"[A-Za-z0-9_-]{11}", v):
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid YouTube video ID",
-        )
-
-    return templates.TemplateResponse(
-        request=request,
-        name='player.html.j2',
-        context={
-            'youtube_video_id': v
-        }
     )

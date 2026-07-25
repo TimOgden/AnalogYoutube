@@ -61,6 +61,25 @@
                 }
             });
         }
+
+        const socketProtocol =
+            window.location.protocol === "https:" ? "wss:" : "ws:";
+
+        const socket = new WebSocket(
+            `${socketProtocol}//${window.location.host}/ws/player`
+        );
+
+        socket.addEventListener("message", event => {
+            const message = JSON.parse(event.data);
+
+            if (message.type !== "play") {
+                return;
+            }
+
+            if (player && typeof player.loadVideoById === "function") {
+                player.loadVideoById(message.video_id);
+            }
+        });
     </script>
 </body>
 </html>
