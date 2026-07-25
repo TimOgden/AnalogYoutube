@@ -1,20 +1,21 @@
 import io
 import pathlib
+import re
 import tempfile
 import zipfile
 
-
-from fastapi.concurrency import asynccontextmanager
 import logging
+
+from fastapi.templating import Jinja2Templates
 from src import youtube_utils, qr_generator_utils
-from src import database
 
-from concurrent.futures import ThreadPoolExecutor
-
-from fastapi import FastAPI, Form, HTTPException
+from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
+from dotenv import load_dotenv
 
-download_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='youtube-download')
+templates = Jinja2Templates(directory='templates')
+load_dotenv(override=True)
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,15 +25,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    database.init_db()
-    yield
-
-
 app = FastAPI(
     title='Analog Youtube',
-    lifespan=lifespan,
 )
 
 
@@ -74,23 +68,11 @@ def generate(urls: str = Form(...)) -> StreamingResponse:
     with tempfile.TemporaryDirectory() as temp_dir:
         output_dir = pathlib.Path(temp_dir)
 
-        with database.get_connection() as conn:
-            html_files = []
-            for url in video_urls:
-                video = youtube_utils.get_youtube_video(url)
-                video_card = youtube_utils.get_youtube_card_by_id(video.yt.video_id, conn)
-
-                if video_card is None:
-                    video_card = youtube_utils.create_or_update_youtube_card(conn, video, video_path=None, thumbnail_path=None,
-                                                                             download_status=None)
-                
-                if video_card.download_status != youtube_utils.DownloadStatus.READY:
-                    download_executor.submit(youtube_utils.download_video_worker, video)
-                else:
-                    logger.info(f'Skipping download of youtube video "{video.title}", already downloaded.')
-
-                html_filepath = qr_generator_utils.populate_qr_code_template(video, output_dir=output_dir)
-                html_files.append(html_filepath)
+        html_files = []
+        for url in video_urls:
+            video = youtube_utils.get_youtube_video(url)
+            html_filepath = qr_generator_utils.populate_qr_code_template(video, output_dir=output_dir)
+            html_files.append(html_filepath)
 
         with zipfile.ZipFile(
             zip_buffer,
@@ -112,23 +94,18 @@ def generate(urls: str = Form(...)) -> StreamingResponse:
     )
 
 
-@app.get('/play/{video_id}', response_class=HTMLResponse)
-def play_video(video_id: int) -> str:
-    with database.get_connection() as conn:
-        video = youtube_utils.get_youtube_card_by_id(video_id, conn)
-
-    if video is None:
+@app.get('/player', response_class=HTMLResponse)
+def play_video(request: Request, v: str) -> str:
+    if not re.fullmatch(r"[A-Za-z0-9_-]{11}", v):
         raise HTTPException(
-            status_code=404,
-            detail=f'Unknown video card: {video_id}'
+            status_code=400,
+            detail="Invalid YouTube video ID",
         )
-    
-    return f"""
-    <!doctype html>
-    <html>
-        <body>
-            <h1>{video["title"]}</h1>
-            <p>Video found. Playback integration comes next.</p>
-        </body>
-    </html>
-    """
+
+    return templates.TemplateResponse(
+        request=request,
+        name='player.html.j2',
+        context={
+            'youtube_video_id': v
+        }
+    )

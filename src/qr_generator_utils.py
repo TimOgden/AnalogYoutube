@@ -1,4 +1,5 @@
 import io
+import os
 import re
 import pathlib
 import qrcode
@@ -7,14 +8,23 @@ import base64
 from src import youtube_utils
 from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup
-import time
+from urllib.parse import urlencode
 
+
+PLAYER_BASE = 'AY'
 
 def sanitize_filename(name: str) -> str:
     # Replace characters that are illegal on Windows/macOS/Linux
     name = re.sub(r'[<>:"/\\|?*]', "_", name)
     # Remove trailing dots/spaces
     return name.rstrip(". ")
+
+
+def create_player_url(
+    base: str,
+    youtube_video_id: str,
+) -> str:
+    return f"{base}:{youtube_video_id}"
 
 
 def generate_qr_svg_data_uri(url: str) -> str:
@@ -57,10 +67,11 @@ def populate_qr_code_template(video: youtube_utils.YoutubeVideo, output_dir: pat
     template = env.get_template("video.html.j2")
 
     thumbnail_data_uri = image_to_data_uri(video.thumbnail)
+    svg_path = f'AY:{video.video_id}'
     html = template.render(
         title=video.title,
         thumbnail=thumbnail_data_uri,
-        svg_url=generate_qr_svg_data_uri(video.url),
+        svg_url=generate_qr_svg_data_uri(svg_path),
     )
 
     filename = output_dir / f'{sanitize_filename(video.title)}.html'
