@@ -1,85 +1,129 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
     <meta charset="utf-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1"
-    >
-
     <title>Analog YouTube</title>
 
     <style>
         html,
-        body,
-        #player {
+        body {
+            margin: 0;
+            background: black;
             width: 100%;
             height: 100%;
-            margin: 0;
             overflow: hidden;
-            background: black;
         }
 
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: 0;
+        #player {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #waiting {
+            color: white;
+            font-family: sans-serif;
+            font-size: 3rem;
+
+            position: absolute;
+            inset: 0;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
     </style>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 
 <body>
-    <div id="player"></div>
 
-    <script src="https://www.youtube.com/iframe_api"></script>
+<div id="waiting">
+    Scan a QR code
+</div>
 
-    <script>
-        let player;
+<div id="player"></div>
 
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player("player", {
-                videoId: {{ youtube_video_id | tojson }},
-                width: "100%",
-                height: "100%",
-                playerVars: {
-                    autoplay: 1,
-                    controls: 0,
-                    disablekb: 0,
-                    fs: 0,
-                    playsinline: 1,
-                    rel: 0
-                },
-                events: {
-                    onReady: event => {
-                        event.target.playVideo();
-                    },
-                    onStateChange: event => {
-                        if (event.data === YT.PlayerState.ENDED) {
-                            window.location.href = "/";
-                        }
+<script>
+    let player = null;
+    let pendingVideoId = null;
+
+    window.onYouTubeIframeAPIReady = function () {
+        player = new YT.Player("player", {
+            width: "100%",
+            height: "100%",
+
+            playerVars: {
+                autoplay: 1,
+                controls: 1,
+                disablekb: 1,
+                fs: 0,
+                playsinline: 1,
+                rel: 0
+            },
+
+            events: {
+                onReady: function () {
+                    if (pendingVideoId) {
+                        playVideo(pendingVideoId);
+                        pendingVideoId = null;
                     }
+                },
+
+                onAutoplayBlocked: function () {
+                    console.error("YouTube autoplay was blocked.");
                 }
-            });
-        }
-
-        const socketProtocol =
-            window.location.protocol === "https:" ? "wss:" : "ws:";
-
-        const socket = new WebSocket(
-            `${socketProtocol}//${window.location.host}/ws/player`
-        );
-
-        socket.addEventListener("message", event => {
-            const message = JSON.parse(event.data);
-
-            if (message.type !== "play") {
-                return;
-            }
-
-            if (player && typeof player.loadVideoById === "function") {
-                player.loadVideoById(message.video_id);
             }
         });
-    </script>
+    };
+
+    function playVideo(videoId) {
+        if (!player || typeof player.loadVideoById !== "function") {
+            pendingVideoId = videoId;
+            return;
+        }
+
+        document.getElementById("waiting").style.display = "none";
+
+        player.loadVideoById({
+            videoId: videoId
+        });
+
+        player.playVideo();
+    }
+
+    function connectWebSocket() {
+        const protocol =
+            location.protocol === "https:" ? "wss:" : "ws:";
+
+        const socket = new WebSocket(
+            `${protocol}//${location.host}/ws/player`
+        );
+
+        socket.onmessage = function (event) {
+            const message = JSON.parse(event.data);
+
+            if (message.type === "play") {
+                playVideo(message.video_id);
+            }
+        };
+
+        socket.onopen = function () {
+            console.log("Player WebSocket connected.");
+        };
+
+        socket.onclose = function () {
+            console.warn("Player WebSocket disconnected; reconnecting...");
+            setTimeout(connectWebSocket, 2000);
+        };
+
+        socket.onerror = function () {
+            socket.close();
+        };
+    }
+
+    connectWebSocket();
+</script>
+
 </body>
 </html>

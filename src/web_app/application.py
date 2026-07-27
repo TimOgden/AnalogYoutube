@@ -5,7 +5,6 @@ import zipfile
 
 import logging
 
-from fastapi.templating import Jinja2Templates
 from src.qr_listener import qr_generator_utils
 from src import youtube_utils
 
@@ -13,7 +12,6 @@ from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, StreamingResponse
 from dotenv import load_dotenv
 
-templates = Jinja2Templates(directory='templates')
 load_dotenv(override=True)
 
 
@@ -92,3 +90,8 @@ def generate(urls: str = Form(...)) -> StreamingResponse:
                 'attachment; filename="youtube-qr-codes.zip"'
         },
     )
+
+from src.web_app.player_routes import router as player_router
+app.include_router(player_router)
+
+# chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --disable-session-crached-bubble --autoplay-policy=no-user-gesture-required http://127.0.0.1:8000/player

@@ -1,4 +1,7 @@
 from fastapi import APIRouter, HTTPException, WebSocket
+from fastapi.responses import HTMLResponse
+from fastapi.requests import Request
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import logging
 
@@ -9,10 +12,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 connected_players: set[WebSocket] = set()
+templates = Jinja2Templates(directory='templates')
 
 
 class PlayRequest(BaseModel):
     video_id: str
+
+
+@router.get("/player", response_class=HTMLResponse)
+async def player(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "player.html.j2",
+        {},
+    )
 
 
 @router.websocket('/ws/player')
@@ -38,6 +51,7 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
     disconnected: list[WebSocket] = []
     for websocket in connected_players:
         try:
+            logger.info(f'Sending video id {request.video_id} to websocket {websocket}...')
             await websocket.send_json(
                 {
                     'type': 'play',
