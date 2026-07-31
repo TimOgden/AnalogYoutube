@@ -177,7 +177,13 @@ def submit_video(video_id: str) -> None:
 
     logger.info(f'Submitting video id `{video_id}` to FastAPI endpoint for playback.')
     try:
-        response = requests.post(PLAY_ENDPOINT, json={'video_id': video_id}, timeout=5)
+        response = requests.post(PLAY_ENDPOINT, json={'video_id': video_id, 'device_id': INPUT_DEVICE}, timeout=5)
+        if not response.ok:
+            logger.error(
+                "Playback request failed: status=%s body=%s",
+                response.status_code,
+                response.text,
+            )
         response.raise_for_status()
     except requests.RequestException:
         logger.exception('Failed to submit video id to %s.', PLAY_ENDPOINT)

@@ -3,49 +3,36 @@ import os
 import pathlib
 import sqlite3
 import logging
-from typing import Iterator
+from typing import Generator
+
+DATABASE_PATH = pathlib.Path(os.getenv('database_path', './data/analog-youtube.db'))
+SCHEMA_PATH = pathlib.Path(os.getenv('schema_path', './schema/schema.sql'))
 
 logger = logging.getLogger()
 
-SCHEMA_PATH = pathlib.Path(os.environ['schema_path'], 'schema.sql')
-DB_PATH = pathlib.Path(os.environ['database_path'])
-db_initialized = False
+def initialize_database() -> None:
+    DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SCHEMA_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-def initialize_db() -> None:
-    if db_initialized:
-        return
-    
-    conn = None
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        if not SCHEMA_PATH.exists():
-            raise FileNotFoundError(f"Schema file not found at: {SCHEMA_PATH.resolve()}")
-        
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        connection.execute("PRAGMA journal_mode=WAL")
+
         with open(SCHEMA_PATH, 'r') as f:
-            sql_script = f.read()
+            connection.executescript(f.read())
 
-        # 3. Execute the entire script
-        cursor.executescript(sql_script)
-        logger.info("Database schema initialized successfully.")
-        db_initialized = True
-    except sqlite3.Error as e:
-        logger.error(f"SQLite error during initialization: {e}")
-        # Depending on severity, you might want to raise or handle this gracefully
-        raise e 
-    finally:
-        if conn:
-            conn.close()
+        connection.commit()
 
 
-def db_cursor() -> Iterator[sqlite3.Cursor]:
-    conn = None
+@contextmanager
+def get_connection() -> Generator[sqlite3.Connection]:
+    connection = sqlite3.connect(DATABASE_PATH)
+    connection.row_factory = sqlite3.Row
+
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        yield cursor
-        conn.commit()
-    except Exception as e:
-        logger.error(e)
-        if conn is not None:
-             conn.rollback()
+        yield connection
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()

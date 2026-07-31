@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 import io
 import pathlib
 import tempfile
@@ -23,9 +24,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db_utils.initialize_database()
+    yield
+
 app = FastAPI(
     title='Analog Youtube',
-    lifespan=db_utils.initialize_db
+    lifespan=lifespan
 )
 
 
@@ -74,7 +80,7 @@ def generate(urls: str = Form(...)) -> StreamingResponse:
             videos.append(video)
             html_filepath = qr_generator_utils.populate_qr_code_template(video, output_dir=output_dir)
             html_files.append(html_filepath)
-        with db_utils.db_cursor() as cur:
+        with db_utils.get_connection() as cur:
             youtube_utils.submit_videos_to_db(cur, videos)
 
         with zipfile.ZipFile(

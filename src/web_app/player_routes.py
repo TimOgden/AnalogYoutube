@@ -1,5 +1,6 @@
 import datetime
 import sqlite3
+import traceback
 
 from fastapi import APIRouter, HTTPException, WebSocket
 from fastapi.responses import HTMLResponse
@@ -41,6 +42,9 @@ async def player_websocket(websocket: WebSocket) -> None:
     try:
         while True:
             await websocket.receive_text()
+    except Exception as e:
+        logger.error('Failed to receive text from connected websocket')
+        raise e
     finally:
         connected_players.discard(websocket)
 
@@ -63,10 +67,11 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
                     'video_id': request.video_id
                 }
             )
-            with db_utils.db_cursor() as cur:
+            with db_utils.get_connection() as cur:
                 submit_watch_to_db(cur, play_request=request)
         except Exception as e:
             logger.error(f'Error sending video id {request.video_id} to websocket {websocket}')
+            traceback.print_exc()
             disconnected.append(websocket)
     
     for websocket in disconnected:
