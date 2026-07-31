@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Viewing History | Analog Youtube</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7fa; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #5c6bc0; color: white; font-weight: bold; cursor: pointer; }
+        /* Highlighting key fields */
+        .device-cell { width: 15%; } 
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📺 Viewing History Dashboard</h1>
+        <p>This dashboard shows a record of videos watched, detailing the content, time, and device used.</p>
+
+        {% if tracking_data is none or tracking_data.empty %}
+            <p style="padding: 20px; background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404;">
+                No viewing history found yet. Time to scan some QR codes!
+            </p>
+        {% else %}
+            {# The DataFrame is passed as 'tracking_data' from the backend #}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Video Title</th>
+                        <th class="url-col">YouTube URL</th>
+                        <th>Watched Date/Time (WatchDt)</th>
+                        <th class="device-cell">Device Used</th>
+                        {# Add other useful columns if necessary #}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for index, row in tracking_data.iterrows() %}
+                    <tr>
+                        <td>{{ row['title'] }}</td>
+                        <td><a href="{{ row['url'] }}" target="_blank">{{ row['url'] }}</a></td>
+                        <td>{{ row['watchDt'] }}</td>
+                        <td class="device-cell">{{ row['device'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+             {# Optional: Summary Section for Parent Insight #}
+             <h2 style="margin-top: 40px;">💡 Quick Insights</h2>
+             <p><strong>Most Used Device:</strong> {{ tracking_data['device'].mode()[0] }}</p>
+             <p><strong>Total Videos Watched (Records):</strong> {{ tracking_data.shape[0] }}</p>
+
+        {% endif %}
+    </div>
+</body>
+</html>
