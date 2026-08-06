@@ -1,4 +1,5 @@
 import os
+import time
 from typing import Iterator
 
 import requests
@@ -38,15 +39,36 @@ def serial_scans() -> Iterator[str]:
 
             scanner = serial.Serial(
                 port=INPUT_DEVICE,
-                baudrate=9600,
+                baudrate=115200,
                 timeout=None,
             )
 
             logger.info("Scanner connected.")
 
+            buffer = bytearray()
             while True:
-                raw_scan = scanner.readline()
-                yield raw_scan.decode("utf-8").strip()
+                chunk = scanner.read(
+                    scanner.in_waiting or 1
+                )
+
+                if chunk:
+                    logger.info("Received raw bytes: %r", chunk)
+                    buffer.extend(chunk)
+
+                # Treat a brief pause as the end of a scan.
+                elif buffer:
+                    raw_scan = bytes(buffer)
+                    buffer.clear()
+
+                    logger.info("Complete raw scan: %r", raw_scan)
+
+                    yield raw_scan.decode(
+                        "utf-8",
+                        errors="replace",
+                    ).strip()
+
+                else:
+                    time.sleep(0.01)
 
         except (
             serial.SerialException,
