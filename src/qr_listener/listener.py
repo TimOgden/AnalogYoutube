@@ -20,10 +20,6 @@ PLAY_ENDPOINT = os.getenv(
     "PLAY_ENDPOINT",
     "http://web:8000/api/play",
 )
-SCANNER_MODE = os.getenv(
-    "SCANNER_MODE",
-    "serial",
-)
 INPUT_DEVICE = os.getenv(
     "INPUT_DEVICE",
     "/dev/ttyACM0",
@@ -86,16 +82,10 @@ def stdin_scans() -> Iterator[str]:
 
 
 def get_scans() -> Iterator[str]:
-    if SCANNER_MODE == "stdin":
+    if INPUT_DEVICE == "stdin":
         return stdin_scans()
-
-    if SCANNER_MODE == "serial":
+    else:
         return serial_scans()
-
-    raise ValueError(
-        f"Unsupported SCANNER_MODE {SCANNER_MODE!r}. "
-        "Expected 'serial' or 'stdin'."
-    )
 
 
 def connect() -> serial.Serial:
@@ -161,7 +151,7 @@ def handle_scan(video_id: str) -> None:
     logger.info("Valid video ID scanned: %s", video_id)
 
     # Skip HDMI-CEC in local development
-    if SCANNER_MODE == 'serial':
+    if INPUT_DEVICE != 'stdin':
         activate_tv()
     submit_video(video_id)
 
