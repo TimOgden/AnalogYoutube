@@ -1,4 +1,5 @@
 import io
+import sqlite3
 import requests
 from dataclasses import dataclass
 from pytubefix import YouTube
@@ -48,3 +49,13 @@ def get_youtube_video(url: str) -> YoutubeVideo:
         thumbnail=thumbnail,
         video_id=yt.video_id
     )
+
+
+def submit_videos_to_db(cur: sqlite3.Cursor, videos: list[YoutubeVideo]) -> None:
+    logger.debug(f'Saving videos to db: {videos}')
+    sql = """INSERT INTO videos (video_id, youtube_url, title) VALUES (?, ?, ?);"""
+
+    param_list = []
+    for video in videos:
+        param_list.append((video.video_id, video.url, video.title))
+    cur.executemany(sql, param_list)

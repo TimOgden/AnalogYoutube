@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 import io
 import pathlib
 import tempfile
@@ -6,7 +7,7 @@ import zipfile
 import logging
 
 from src.qr_listener import qr_generator_utils
-from src import youtube_utils
+from src import youtube_utils, db_utils
 
 from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -23,8 +24,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db_utils.initialize_database()
+    yield
+
 app = FastAPI(
     title='Analog Youtube',
+    lifespan=lifespan
 )
 
 
@@ -67,10 +74,14 @@ def generate(urls: str = Form(...)) -> StreamingResponse:
         output_dir = pathlib.Path(temp_dir)
 
         html_files = []
+        videos = []
         for url in video_urls:
             video = youtube_utils.get_youtube_video(url)
+            videos.append(video)
             html_filepath = qr_generator_utils.populate_qr_code_template(video, output_dir=output_dir)
             html_files.append(html_filepath)
+        with db_utils.get_connection() as cur:
+            youtube_utils.submit_videos_to_db(cur, videos)
 
         with zipfile.ZipFile(
             zip_buffer,
@@ -92,6 +103,8 @@ def generate(urls: str = Form(...)) -> StreamingResponse:
     )
 
 from src.web_app.player_routes import router as player_router
+from src.web_app.tracking_routes import router as tracking_router
 app.include_router(player_router)
+app.include_router(tracking_router)
 
 # chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --disable-session-crached-bubble --autoplay-policy=no-user-gesture-required http://127.0.0.1:8000/player

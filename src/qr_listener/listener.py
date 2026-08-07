@@ -1,4 +1,5 @@
 import os
+import time
 from typing import Iterator
 
 import requests
@@ -20,10 +21,6 @@ PLAY_ENDPOINT = os.getenv(
     "PLAY_ENDPOINT",
     "http://web:8000/api/play",
 )
-SCANNER_MODE = os.getenv(
-    "SCANNER_MODE",
-    "serial",
-)
 INPUT_DEVICE = os.getenv(
     "INPUT_DEVICE",
     "/dev/ttyACM0",
@@ -42,15 +39,36 @@ def serial_scans() -> Iterator[str]:
 
             scanner = serial.Serial(
                 port=INPUT_DEVICE,
-                baudrate=9600,
+                baudrate=115200,
                 timeout=None,
             )
 
             logger.info("Scanner connected.")
 
+            buffer = bytearray()
             while True:
-                raw_scan = scanner.readline()
-                yield raw_scan.decode("utf-8").strip()
+                chunk = scanner.read(
+                    scanner.in_waiting or 1
+                )
+
+                if chunk:
+                    logger.info("Received raw bytes: %r", chunk)
+                    buffer.extend(chunk)
+
+                # Treat a brief pause as the end of a scan.
+                elif buffer:
+                    raw_scan = bytes(buffer)
+                    buffer.clear()
+
+                    logger.info("Complete raw scan: %r", raw_scan)
+
+                    yield raw_scan.decode(
+                        "utf-8",
+                        errors="replace",
+                    ).strip()
+
+                else:
+                    time.sleep(0.01)
 
         except (
             serial.SerialException,
@@ -86,16 +104,10 @@ def stdin_scans() -> Iterator[str]:
 
 
 def get_scans() -> Iterator[str]:
-    if SCANNER_MODE == "stdin":
+    if INPUT_DEVICE == "stdin":
         return stdin_scans()
-
-    if SCANNER_MODE == "serial":
+    else:
         return serial_scans()
-
-    raise ValueError(
-        f"Unsupported SCANNER_MODE {SCANNER_MODE!r}. "
-        "Expected 'serial' or 'stdin'."
-    )
 
 
 def connect() -> serial.Serial:
@@ -161,7 +173,7 @@ def handle_scan(video_id: str) -> None:
     logger.info("Valid video ID scanned: %s", video_id)
 
     # Skip HDMI-CEC in local development
-    if SCANNER_MODE == 'serial':
+    if INPUT_DEVICE != 'stdin':
         activate_tv()
     submit_video(video_id)
 
@@ -177,7 +189,13 @@ def submit_video(video_id: str) -> None:
 
     logger.info(f'Submitting video id `{video_id}` to FastAPI endpoint for playback.')
     try:
-        response = requests.post(PLAY_ENDPOINT, json={'video_id': video_id}, timeout=5)
+        response = requests.post(PLAY_ENDPOINT, json={'video_id': video_id, 'device_id': INPUT_DEVICE}, timeout=5)
+        if not response.ok:
+            logger.error(
+                "Playback request failed: status=%s body=%s",
+                response.status_code,
+                response.text,
+            )
         response.raise_for_status()
     except requests.RequestException:
         logger.exception('Failed to submit video id to %s.', PLAY_ENDPOINT)
