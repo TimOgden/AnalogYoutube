@@ -65,7 +65,7 @@ def populate_qr_code_template(video: youtube_utils.YoutubeVideo, output_dir: pat
     template = env.get_template("video_qr.html.j2")
 
     thumbnail_data_uri = image_to_data_uri(video.thumbnail)
-    svg_path = f'AY:{video.video_id}'
+    svg_path = f'{video.video_id}'
     html = template.render(
         title=video.title,
         thumbnail=thumbnail_data_uri,
