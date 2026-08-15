@@ -45,44 +45,32 @@ def serial_scans() -> Iterator[str]:
 
             logger.info("Scanner connected.")
 
-            buffer = bytearray()
             while True:
-                chunk = scanner.read(
-                    scanner.in_waiting or 1
+                raw_scan = scanner.read_until(b"\r")
+
+                logger.info("Received raw scan: %r", raw_scan)
+
+                video_id = (
+                    raw_scan
+                    .decode("utf-8", errors="replace")
+                    .strip()
                 )
 
-                if chunk:
-                    logger.info("Received raw bytes: %r", chunk)
-                    buffer.extend(chunk)
-
-                # Treat a brief pause as the end of a scan.
-                elif buffer:
-                    raw_scan = bytes(buffer)
-                    buffer.clear()
-
-                    logger.info("Complete raw scan: %r", raw_scan)
-
-                    yield raw_scan.decode(
-                        "utf-8",
-                        errors="replace",
-                    ).strip()
-
-                else:
-                    time.sleep(0.01)
+                if video_id:
+                    yield video_id
 
         except (
             serial.SerialException,
             serial.SerialTimeoutException,
             OSError,
-        ):
+        ) as e:
             logger.warning(
-                "Scanner unavailable or disconnected; retrying in %s seconds...",
+                "Scanner unavailable or disconnected: %s. "
+                "Retrying in %s seconds...",
+                e,
                 SLEEP_TIME,
             )
             sleep(SLEEP_TIME)
-
-        except UnicodeDecodeError:
-            logger.warning("Scanner returned invalid UTF-8 input.")
 
         finally:
             if scanner is not None and scanner.is_open:
