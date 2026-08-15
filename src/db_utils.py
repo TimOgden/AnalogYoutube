@@ -3,7 +3,7 @@ import os
 import pathlib
 import sqlite3
 import logging
-from typing import Generator
+from typing import Iterator
 
 DATABASE_PATH = pathlib.Path(os.getenv('database_path', './data/analog-youtube.db'))
 SCHEMA_PATH = pathlib.Path(os.getenv('schema_path', './schema/schema.sql'))
@@ -24,7 +24,7 @@ def initialize_database() -> None:
 
 
 @contextmanager
-def get_connection() -> Generator[sqlite3.Connection]:
+def get_connection() -> Iterator[sqlite3.Connection]:
     connection = sqlite3.connect(DATABASE_PATH)
     connection.row_factory = sqlite3.Row
 
