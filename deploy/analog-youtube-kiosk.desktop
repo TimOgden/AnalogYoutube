@@ -1,8 +1,6 @@
 [Desktop Entry]
 Type=Application
 Name=Analog YouTube Kiosk
-
-Exec=/bin/bash -lc 'until curl --silent --fail http://127.0.0.1:8000/player >/dev/null; do sleep 2; done; exec chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --disable-session-crashed-bubble --autoplay-policy=no-user-gesture-required http://127.0.0.1:8000/player'
-
+Exec=/opt/analog-youtube/deploy/start-kiosk.sh
 Terminal=false
 X-GNOME-Autostart-enabled=true
