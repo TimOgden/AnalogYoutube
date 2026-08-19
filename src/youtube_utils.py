@@ -51,7 +51,7 @@ def get_youtube_video(url: str) -> YoutubeVideo:
     )
 
 
-def video_from_video_id(video_id: str) -> YoutubeVideo:
+def video_from_id(video_id: str) -> YoutubeVideo:
     url = f'www.youtube.com/watch?v={video_id}'
     return get_youtube_video(url)
 
