@@ -63,5 +63,5 @@ def submit_videos_to_db(cur: sqlite3.Cursor, videos: list[YoutubeVideo]) -> None
 
     param_list = []
     for video in videos:
-        param_list.append((video.video_id, video.url, video.title))
+        param_list.append((video.video_id, video.url, video.title, video.url, video.title))
     cur.executemany(sql, param_list)
