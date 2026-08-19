@@ -12,8 +12,9 @@ services:
     
   scanner:
     build:
-      dockerfile: scanner-Dockerfile
+      dockerfile: devices-Dockerfile
     container_name: analog-youtube-scanner
+    command: python -m src.qr_listener.listener
     restart: unless-stopped
 
     devices:
@@ -24,6 +25,22 @@ services:
       PLAY_ENDPOINT: http://web:8000/api/play
       INPUT_DEVICE: /dev/ttyACM0
       SCANNER_MODE: serial
+    
+    depends_on:
+      - web
+  
+  remote:
+    build:
+      dockerfile: devices-Dockerfile
+    container_name: analog-youtube-remote
+    command: python -m src.remote_listener.listener
+    restart: unless-stopped
+
+    devices:
+
+    environment:
+      COMMANDS_ENDPOINT: http://web:8000/api/control
+      INPUT_DEVICE: stdin
     
     depends_on:
       - web
