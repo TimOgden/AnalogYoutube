@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import logging
 
-from src import db_utils
+from src import db_utils, youtube_utils
 from src.consts import VIDEO_ID_PATTERN
 
 logger = logging.getLogger(__name__)
@@ -81,6 +81,10 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
 
 def submit_watch_to_db(cur: sqlite3.Cursor, play_request: PlayRequest) -> None:
     logger.info(f'Submitting watch to db: {play_request}')
+    
+    video = youtube_utils.video_from_id(play_request.video_id)
+    youtube_utils.submit_videos_to_db(cur, [video])
+    
     sql = """INSERT INTO watchHistory (video_id, device, watchDt) VALUES (?, ?, ?);"""
     now_dt = datetime.datetime.now()
     cur.execute(sql, (play_request.video_id, play_request.device_id, now_dt))

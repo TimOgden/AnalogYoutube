@@ -51,9 +51,15 @@ def get_youtube_video(url: str) -> YoutubeVideo:
     )
 
 
+def video_from_video_id(video_id: str) -> YoutubeVideo:
+    url = f'www.youtube.com/watch?v={video_id}'
+    return get_youtube_video(url)
+
+
 def submit_videos_to_db(cur: sqlite3.Cursor, videos: list[YoutubeVideo]) -> None:
-    logger.debug(f'Saving videos to db: {videos}')
-    sql = """INSERT INTO videos (video_id, youtube_url, title) VALUES (?, ?, ?);"""
+    logger.info(f'Saving videos to db: {videos}')
+    sql = """INSERT INTO videos (video_id, youtube_url, title) VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE youtube_url=?, title=?;"""
 
     param_list = []
     for video in videos:
