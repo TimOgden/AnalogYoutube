@@ -114,7 +114,7 @@ def connect() -> serial.Serial:
             sleep(SLEEP_TIME)
 
 
-def _send_cec_command(command: str) -> None:
+def _send_cec_command(command: str, timeout: int = 10) -> None:
     """Send a command to TV over HDMI-CEC"""
     try:
         result = subprocess.run(
@@ -122,7 +122,7 @@ def _send_cec_command(command: str) -> None:
             input=f"{command}\n",
             text=True,
             capture_output=True,
-            timeout=10,
+            timeout=timeout,
             check=False,
         )
 
@@ -161,7 +161,7 @@ def activate_tv() -> None:
     time.sleep(CEC_WAKE_DELAY)
 
     logger.info('Setting Pi as active HDMI source...')
-    if not _send_cec_command('as'):
+    if not _send_cec_command('as', timeout=30):
         return
     logger.info('Successfully activated TV.')
 
