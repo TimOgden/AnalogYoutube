@@ -16,6 +16,7 @@ services:
 
     devices:
     - /dev/ttyACM0:/dev/ttyACM0
+    - /dev/cec0:/dev/cec0
 
     environment:
       PLAY_ENDPOINT: http://web:8000/api/play
