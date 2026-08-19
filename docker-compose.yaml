@@ -40,6 +40,9 @@ services:
       COMMANDS_ENDPOINT: http://web:8000/api/control
       INPUT_DEVICE: stdin
     
+    stdin_open: true
+    tty: true
+  
     depends_on:
       - web
   
