@@ -92,6 +92,43 @@
         player.playVideo();
     }
 
+    function handleControl(command) {
+        switch (command) {
+            case "play":
+                player.playVideo();
+                break;
+
+            case "pause":
+                player.pauseVideo();
+                break;
+
+            case "play_pause":
+                const state = player.getPlayerState();
+
+                if (state === YT.PlayerState.PLAYING) {
+                    player.pauseVideo();
+                } else {
+                    player.playVideo();
+                }
+
+                break;
+
+            case "seek_forward":
+                player.seekTo(
+                    player.getCurrentTime() + 10,
+                    true
+                );
+                break;
+
+            case "seek_backward":
+                player.seekTo(
+                    Math.max(player.getCurrentTime() - 10, 0),
+                    true
+                );
+                break;
+        }
+    }
+
     function connectWebSocket() {
         const protocol =
             location.protocol === "https:" ? "wss:" : "ws:";
@@ -100,12 +137,17 @@
             `${protocol}//${location.host}/ws/player`
         );
 
-        socket.onmessage = function (event) {
-            console.log(event.data);
+        socket.onmessage = (event) => {
             const message = JSON.parse(event.data);
 
-            if (message.type === "play") {
-                playVideo(message.video_id);
+            switch (message.type) {
+                case "play":
+                    player.loadVideoById(message.video_id);
+                    break;
+
+                case "control":
+                    handleControl(message.command);
+                    break;
             }
         };
 

@@ -1,6 +1,7 @@
 import datetime
 import sqlite3
 import traceback
+from enum import Enum
 
 from fastapi import APIRouter, HTTPException, WebSocket
 from fastapi.responses import HTMLResponse
@@ -23,6 +24,41 @@ templates = Jinja2Templates(directory='templates')
 class PlayRequest(BaseModel):
     video_id: str
     device_id: str
+
+
+class PlayerCommand(str, Enum):
+    PLAY = "play"
+    PAUSE = "pause"
+    PLAY_PAUSE = "play_pause"
+    SEEK_FORWARD = "seek_forward"
+    SEEK_BACKWARD = "seek_backward"
+
+
+class ControlRequest(BaseModel):
+    command: PlayerCommand
+
+
+async def broadcast(message: dict) -> None:
+    disconnected = []
+
+    for websocket in connected_players:
+        try:
+            await websocket.send_json(message)
+        except Exception:
+            disconnected.append(websocket)
+
+    for websocket in disconnected:
+        connected_players.discard(websocket)
+
+
+@router.post("/api/control")
+async def control_player(request: ControlRequest):
+    await broadcast({
+        "type": "control",
+        "command": request.command,
+    })
+
+    return {"status": "ok"}
 
 
 @router.get("/player", response_class=HTMLResponse)
@@ -61,12 +97,10 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
     for websocket in connected_players:
         try:
             logger.info(f'Sending video id {request.video_id} to websocket {websocket}...')
-            await websocket.send_json(
-                {
+            await broadcast({
                     'type': 'play',
                     'video_id': request.video_id
-                }
-            )
+                })
             with db_utils.get_connection() as cur:
                 submit_watch_to_db(cur, play_request=request)
         except Exception as e:
@@ -81,7 +115,7 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
 
 def submit_watch_to_db(cur: sqlite3.Cursor, play_request: PlayRequest) -> None:
     logger.info(f'Submitting watch to db: {play_request}')
-    
+
     video = youtube_utils.video_from_id(play_request.video_id)
     youtube_utils.submit_videos_to_db(cur, [video])
     
