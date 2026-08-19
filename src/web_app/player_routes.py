@@ -53,6 +53,7 @@ async def broadcast(message: dict) -> None:
 
 @router.post("/api/control")
 async def control_player(request: ControlRequest):
+    logger.info(f'Sending command: {request} to player...')
     await broadcast({
         "type": "control",
         "command": request.command,

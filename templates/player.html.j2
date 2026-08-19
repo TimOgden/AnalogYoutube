@@ -93,6 +93,7 @@
     }
 
     function handleControl(command) {
+        console.log(`Received command: ${command}`);
         switch (command) {
             case "play":
                 player.playVideo();
