@@ -80,7 +80,7 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
 
 
 def submit_watch_to_db(cur: sqlite3.Cursor, play_request: PlayRequest) -> None:
-    logger.debug(f'Submitting watch to db: {play_request}')
+    logger.info(f'Submitting watch to db: {play_request}')
     sql = """INSERT INTO watchHistory (video_id, device, watchDt) VALUES (?, ?, ?);"""
     now_dt = datetime.datetime.now()
     cur.execute(sql, (play_request.video_id, play_request.device_id, now_dt))
