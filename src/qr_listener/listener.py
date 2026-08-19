@@ -26,6 +26,7 @@ INPUT_DEVICE = os.getenv(
     "/dev/ttyACM0",
 )
 SLEEP_TIME = 10
+CEC_WAKE_DELAY = 3
 
 
 def serial_scans() -> Iterator[str]:
@@ -113,11 +114,12 @@ def connect() -> serial.Serial:
             sleep(SLEEP_TIME)
 
 
-def activate_tv() -> None:
+def _send_cec_command(command: str) -> None:
+    """Send a command to TV over HDMI-CEC"""
     try:
         result = subprocess.run(
-            ["cec-client", "-s", "-d", "4"],
-            input="on 0\nas\n",
+            ["cec-client", "-s", "-d", "1", "-t", "p"],
+            input=f"{command}\n",
             text=True,
             capture_output=True,
             timeout=10,
@@ -126,21 +128,42 @@ def activate_tv() -> None:
 
         if result.returncode != 0:
             logger.warning(
-                "HDMI-CEC command failed with exit code %s.\nstdout:\n%s\nstderr:\n%s",
+                "HDMI-CEC command %r failed with exit code %s.\n"
+                "stdout:\n%s\n"
+                "stderr:\n%s",
+                command,
                 result.returncode,
                 result.stdout.strip(),
                 result.stderr.strip(),
             )
-            return
+            return False
 
-        logger.info("TV woken and Pi set as active HDMI source.")
+        return True
 
     except FileNotFoundError:
-        logger.error("cec-client is not installed in the scanner container.")
+        logger.error("cec-client is not installed.")
     except subprocess.TimeoutExpired:
-        logger.warning("HDMI-CEC command timed out.")
+        logger.warning("HDMI-CEC command %r timed out.", command)
     except OSError:
-        logger.exception("Could not execute HDMI-CEC command.")
+        logger.exception(
+            "Could not execute HDMI-CEC command %r.",
+            command,
+        )
+
+    return False
+
+
+def activate_tv() -> None:
+    logger.info('Waking TV...')
+    if not _send_cec_command('on 0'):
+        return
+
+    time.sleep(CEC_WAKE_DELAY)
+
+    logger.info('Setting Pi as active HDMI source...')
+    if not _send_cec_command('as'):
+        return
+    logger.info('Successfully activated TV.')
 
 
 def handle_scan(video_id: str) -> None:
