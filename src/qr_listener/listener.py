@@ -114,35 +114,33 @@ def connect() -> serial.Serial:
 
 
 def activate_tv() -> None:
-    """
-    Wake the TV and ask it to switch to the Pi's HDMI input.
-
-    CEC logical address 0 is normally the TV.
-    """
     try:
         result = subprocess.run(
-            ['cec-client', '-s', '-d', '1'],
+            ["cec-client", "-s", "-d", "4"],
             input="on 0\nas\n",
             text=True,
             capture_output=True,
             timeout=10,
-            check=False
+            check=False,
         )
 
         if result.returncode != 0:
             logger.warning(
-                'HDMI-CEC command failed with exit code %s: %s',
+                "HDMI-CEC command failed with exit code %s.\nstdout:\n%s\nstderr:\n%s",
                 result.returncode,
-                result.stderr.strip()
+                result.stdout.strip(),
+                result.stderr.strip(),
             )
             return
-        logger.info('Sent TV wake and active-source commands.')
+
+        logger.info("TV woken and Pi set as active HDMI source.")
+
     except FileNotFoundError:
-        logger.error('cenc-client is not installed in the scanner container.')
+        logger.error("cec-client is not installed in the scanner container.")
     except subprocess.TimeoutExpired:
-        logger.warning('HDMI-CEC command timed out')
+        logger.warning("HDMI-CEC command timed out.")
     except OSError:
-        logger.exception('Could not execute HDMI-CEC command')
+        logger.exception("Could not execute HDMI-CEC command.")
 
 
 def handle_scan(video_id: str) -> None:
