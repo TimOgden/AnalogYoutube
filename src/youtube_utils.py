@@ -56,12 +56,27 @@ def video_from_id(video_id: str) -> YoutubeVideo:
     return get_youtube_video(url)
 
 
-def submit_videos_to_db(cur: sqlite3.Cursor, videos: list[YoutubeVideo]) -> None:
-    logger.info(f'Saving videos to db: {videos}')
-    sql = """INSERT INTO videos (video_id, youtube_url, title) VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE youtube_url=?, title=?;"""
+def submit_videos_to_db(
+    cur: sqlite3.Cursor,
+    videos: list[YoutubeVideo],
+) -> None:
+    logger.info("Saving videos to db: %s", videos)
 
-    param_list = []
-    for video in videos:
-        param_list.append((video.video_id, video.url, video.title, video.url, video.title))
-    cur.executemany(sql, param_list)
+    sql = """
+        INSERT INTO videos (
+            video_id,
+            youtube_url,
+            title
+        )
+        VALUES (?, ?, ?)
+        ON CONFLICT(video_id) DO UPDATE SET
+            youtube_url = excluded.youtube_url,
+            title = excluded.title;
+    """
+
+    params = [
+        (video.video_id, video.url, video.title)
+        for video in videos
+    ]
+
+    cur.executemany(sql, params)
