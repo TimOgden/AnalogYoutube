@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 import datetime
 import enum
+import logging
 from sqlite3 import Connection, Cursor
 import time
 import uuid
@@ -8,6 +9,7 @@ import uuid
 from src.db_utils import get_connection
 
 active_sessions: dict[str, WatchSession] = {}
+logger = logging.getLogger(__name__)
 
 
 MAX_HEARTBEAT_DELTA = 10
@@ -69,10 +71,12 @@ class WatchSession:
         self.last_update = None
 
         self.save(end=True)
+        logger.info(f'Ended watch session {self}.')
 
     def save(self, end: bool = False) -> None:
         now = datetime.datetime.now()
         with get_connection() as conn:
+            logger.info(f'Saving {self.pending_usage_seconds} to session {self}...')
             conn.execute(
                 """
                 INSERT INTO playback_usage
@@ -109,9 +113,11 @@ def create_watch_session(video_id: str) -> WatchSession:
     session_id = str(uuid.uuid4())
     session = WatchSession(video_id=video_id, session_id=session_id)
 
-    active_sessions = {}  # TODO: assuming only one active session, may want to improve this
+    for existing_session in active_sessions.values():
+        existing_session.end()
     active_sessions[session.session_id] = session
 
+    logger.info(f'Created watch session {session_id} for video {video_id}.')
     return session
 
 
@@ -129,6 +135,6 @@ def get_usage_since(cur: Cursor, start_time: datetime.datetime) -> float:
 
 def submit_new_session(session: WatchSession, conn: Connection) -> None:
     now = datetime.datetime.now()
-    conn.cursor().execute("""INSERT INTO playback_session
+    conn.execute("""INSERT INTO playback_sessions
                 (id, video_id, created_at)
-                VALUES (?, ?, ?, ?)""", parameters=(session.session_id, session.video_id, now))
+                VALUES (?, ?, ?)""", (session.session_id, session.video_id, now))
