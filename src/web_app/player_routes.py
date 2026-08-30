@@ -58,8 +58,10 @@ async def player_websocket(websocket: WebSocket) -> None:
                 continue
 
             if message_type == 'playback_progress':
+                logger.info(f'Received playback_progress socket message {message} for session {session}')
                 session.handle_progress(actual_video_id=actual_video_id)
             elif message_type == 'player_state':
+                logger.info(f'Received player state change socket message {message} for session {session}')
                 session.handle_state_change(state=message['state'])
     except Exception as e:
         logger.error('Failed to receive text from connected websocket')

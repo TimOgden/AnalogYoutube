@@ -49,6 +49,7 @@
     let expectedVideoId = null;
     let currentSessionId = null;
     let sequence = 0;
+    let socker = null;
 
     function sendPlayerState(state) {
         if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -62,7 +63,7 @@
         const actualVideoId =
             player.getVideoData()?.video_id ?? null;
 
-        socket.send(JSON.stringify({
+        const message = {
             type: "player_state",
 
             session_id: currentSessionId,
@@ -75,7 +76,9 @@
 
             current_time: player.getCurrentTime(),
             duration: player.getDuration()
-        }));
+        };
+        console.log(`Sending message: ${JSON.stringify(message)}...`);
+        socket.send(JSON.stringify(message));
     }
 
     function onPlayerStateChanged(event) {
@@ -107,7 +110,7 @@
                 onAutoplayBlocked: function () {
                     console.error("YouTube autoplay was blocked.");
                 },
-                onStateChanged: onPlayerStateChanged
+                onStateChange: onPlayerStateChanged
             }
         });
     };
@@ -134,7 +137,7 @@
         const protocol =
             location.protocol === "https:" ? "wss:" : "ws:";
 
-        const socket = new WebSocket(
+        socket = new WebSocket(
             `${protocol}//${location.host}/ws/player`
         );
 
@@ -178,7 +181,7 @@
             return;
         }
 
-        socket.send(JSON.stringify({
+        const message = {
             type: "playback_progress",
 
             session_id: currentSessionId,
@@ -189,7 +192,9 @@
 
             current_time: player.getCurrentTime(),
             duration: player.getDuration()
-        }));
+        };
+        console.log(`Sending message ${JSON.stringify(message)}...`);
+        socket.send(JSON.stringify(message));
     }
 
 

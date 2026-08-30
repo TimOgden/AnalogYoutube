@@ -17,6 +17,7 @@ SAVE_INTERVAL = 30
 
 
 class PlayingState(enum.Enum):
+    INVALID = -1
     PLAYING = 1
     PAUSED = 2
     BUFFERING = 3
@@ -41,7 +42,7 @@ class WatchSession:
         if self.last_update is not None:
             elapsed = now - self.last_update
 
-            self.watched_seconds += min(
+            self.pending_usage_seconds += min(
                 elapsed,
                 MAX_HEARTBEAT_DELTA,
             )
@@ -49,6 +50,7 @@ class WatchSession:
         self.last_update = now
 
     def handle_progress(self, actual_video_id: str) -> None:
+        self.is_playing = True
         if actual_video_id != self.video_id:
             self.end()
             return
@@ -76,7 +78,7 @@ class WatchSession:
     def save(self, end: bool = False) -> None:
         now = datetime.datetime.now()
         with get_connection() as conn:
-            logger.info(f'Saving {self.pending_usage_seconds} to session {self}...')
+            logger.info(f'Saving {self.pending_usage_seconds:.2f} seconds to session {self}...')
             conn.execute(
                 """
                 INSERT INTO playback_usage
@@ -104,9 +106,9 @@ class WatchSession:
     def maybe_save(self) -> None:
         now = time.monotonic()
 
-        if now - self.last_saved_at >= SAVE_INTERVAL:
+        if now - self.last_update >= SAVE_INTERVAL:
             self.save()
-            self.last_saved_at = now
+            self.last_update = now
 
 
 def create_watch_session(video_id: str) -> WatchSession:
