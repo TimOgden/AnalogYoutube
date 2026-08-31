@@ -29,9 +29,7 @@
                 <thead>
                     <tr>
                         <th>Video Title</th>
-                        <th class="url-col">YouTube URL</th>
-                        <th>Watched Date/Time (WatchDt)</th>
-                        <th class="device-cell">Device Used</th>
+                        <th>Minutes Watched</th>
                         {# Add other useful columns if necessary #}
                     </tr>
                 </thead>
@@ -39,18 +37,11 @@
                     {% for index, row in tracking_data.iterrows() %}
                     <tr>
                         <td>{{ row['title'] }}</td>
-                        <td><a href="{{ row['url'] }}" target="_blank">{{ row['url'] }}</a></td>
-                        <td>{{ row['watchDt'] }}</td>
-                        <td class="device-cell">{{ row['device'] }}</td>
+                        <td>{{ row['watched_minutes'] }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-
-             {# Optional: Summary Section for Parent Insight #}
-             <h2 style="margin-top: 40px;">💡 Quick Insights</h2>
-             <p><strong>Most Used Device:</strong> {{ tracking_data['device'].mode()[0] }}</p>
-             <p><strong>Total Videos Watched (Records):</strong> {{ tracking_data.shape[0] }}</p>
 
         {% endif %}
     </div>

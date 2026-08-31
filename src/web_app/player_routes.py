@@ -94,7 +94,7 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
                 }
             )
             with db_utils.get_connection() as cur:
-                submit_watch_to_db(cur, play_request=request)
+                submit_video_to_db(cur, play_request=request)
         except Exception as e:
             logger.error(f'Error sending video id {request.video_id} to websocket {websocket}')
             traceback.print_exc()
@@ -105,12 +105,8 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
     return {'status': 'playing', 'session_id': session.session_id}
 
 
-def submit_watch_to_db(cur: sqlite3.Cursor, play_request: PlayRequest) -> None:
+def submit_video_to_db(cur: sqlite3.Cursor, play_request: PlayRequest) -> None:
     logger.info(f'Submitting watch to db: {play_request}')
     
     video = youtube_utils.video_from_id(play_request.video_id)
     youtube_utils.submit_videos_to_db(cur, [video])
-    
-    sql = """INSERT INTO watchHistory (video_id, device, watchDt) VALUES (?, ?, ?);"""
-    now_dt = datetime.datetime.now()
-    cur.execute(sql, (play_request.video_id, play_request.device_id, now_dt))

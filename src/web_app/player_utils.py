@@ -6,6 +6,8 @@ from sqlite3 import Connection, Cursor
 import time
 import uuid
 
+import pandas as pd
+
 from src.db_utils import get_connection
 
 active_sessions: dict[str, WatchSession] = {}
@@ -106,7 +108,7 @@ class WatchSession:
     def maybe_save(self) -> None:
         now = time.monotonic()
 
-        if now - self.last_update >= SAVE_INTERVAL:
+        if self.pending_usage_seconds >= SAVE_INTERVAL:
             self.save()
             self.last_update = now
 
@@ -133,6 +135,24 @@ def get_usage_since(cur: Cursor, start_time: datetime.datetime) -> float:
                 WHERE recorded_at >= ?;""", parameters=(start_time))
     usage = float(cur.fetchone()[0])
     return usage
+
+
+def get_usage_since_per_video(conn: Connection, start_time: datetime.datetime) -> pd.DataFrame:
+    df = pd.read_sql("""
+        SELECT
+            v.video_id,
+            v.title,
+            COALESCE(SUM(pu.watched_seconds), 0) AS watched_seconds
+        FROM playback_usage pu
+        JOIN playback_sessions ps
+            ON ps.id = pu.session_id
+        JOIN videos v
+            ON v.video_id = ps.video_id
+        WHERE pu.recorded_at >= ?
+        GROUP BY v.video_id, v.title
+        ORDER BY watched_seconds DESC
+        """, params=(start_time,), con=conn)
+    return df
 
 
 def submit_new_session(session: WatchSession, conn: Connection) -> None:

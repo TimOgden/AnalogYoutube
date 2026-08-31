@@ -4,13 +4,6 @@ CREATE TABLE IF NOT EXISTS videos (
                 title TEXT NOT NULL
             );
 
-CREATE TABLE IF NOT EXISTS watchHistory (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    video_id TEXT,
-    device TEXT,
-    watchDt DATETIME NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS playback_sessions (
     id          TEXT PRIMARY KEY,
     video_id    TEXT NOT NULL,
