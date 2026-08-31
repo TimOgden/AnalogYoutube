@@ -37,7 +37,7 @@ services:
     restart: unless-stopped
 
     devices:
-    - /dev/input/event0:/dev/input/event0
+    - /dev/input/by-id/usb-XING_WEI_2.4G_USB_USB_Composite_Device-if02-event-kbd:/dev/input/by-id/usb-XING_WEI_2.4G_USB_USB_Composite_Device-if02-event-kbd
 
     environment:
       COMMANDS_ENDPOINT: http://web:8000/api/control
