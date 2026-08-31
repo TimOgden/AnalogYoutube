@@ -28,4 +28,5 @@ exec /usr/bin/chromium \
     --no-first-run \
     --disable-session-crashed-bubble \
     --autoplay-policy=no-user-gesture-required \
+    --password-store=basic \
     http://127.0.0.1:8000/player
