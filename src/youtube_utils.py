@@ -21,6 +21,7 @@ YOUTUBE_OEMBED_URL = "https://www.youtube.com/oembed"
 class YoutubeVideo:
     title: str
     url: str
+    author_name: str
     thumbnail: Image
     video_id: str
 
@@ -46,6 +47,7 @@ def get_youtube_video(url: str) -> YoutubeVideo:
     return YoutubeVideo(
         url=url,
         title=data["title"],
+        author_name=data['author_name'],
         thumbnail=thumbnail,
         video_id=yt.video_id
     )
@@ -66,16 +68,18 @@ def submit_videos_to_db(
         INSERT INTO videos (
             video_id,
             youtube_url,
-            title
+            title,
+            author_name
         )
-        VALUES (?, ?, ?)
+        VALUES (?, ?, ?, ?)
         ON CONFLICT(video_id) DO UPDATE SET
             youtube_url = excluded.youtube_url,
-            title = excluded.title;
+            title = excluded.title,
+            author_name = excluded.author_name;
     """
 
     params = [
-        (video.video_id, video.url, video.title)
+        (video.video_id, video.url, video.title, video.author_name)
         for video in videos
     ]
 

@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from fastapi import APIRouter, Request
@@ -7,6 +8,7 @@ from jinja2 import Environment, FileSystemLoader
 import pandas as pd
 
 from src import db_utils
+from src.web_app import player_utils
 
 router = APIRouter()
 
@@ -17,14 +19,12 @@ templates = Jinja2Templates(directory='templates')
 
 @router.get("/tracking")
 async def get_tracking(request: Request) -> HTMLResponse:
-    sql = """
-        SELECT h.device, h.watchDt,
-        h.video_id, v.youtube_url as url, v.title
-        FROM watchHistory h
-        LEFT JOIN videos v on h.video_id=v.video_id;
-    """
+    time_in_days = 14
+    start_time = datetime.datetime.now() - datetime.timedelta(days=time_in_days)
+
     with db_utils.get_connection() as conn:
-        df = pd.read_sql(sql, conn)
+        df = player_utils.get_usage_since_per_video(conn=conn, start_time=start_time)
+    df['watched_minutes'] = df['watched_seconds'] / 60
 
     try:
         return templates.TemplateResponse(

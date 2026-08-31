@@ -24,7 +24,7 @@ def initialize_database() -> None:
 
 
 @contextmanager
-def get_connection() -> Iterator[sqlite3.Connection]:
+def get_connection(test: bool = False) -> Iterator[sqlite3.Connection]:
     connection = sqlite3.connect(DATABASE_PATH)
     connection.row_factory = sqlite3.Row
 
@@ -35,4 +35,7 @@ def get_connection() -> Iterator[sqlite3.Connection]:
         connection.rollback()
         raise
     finally:
-        connection.close()
+        if test:
+            connection.rollback()
+        else:
+            connection.close()
