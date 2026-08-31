@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Iterator
+from evdev import InputDevice, categorize, ecodes
 
 import requests
 
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 INPUT_DEVICE = os.getenv(
     "INPUT_DEVICE",
-    "/dev/ttyACM0",  # TODO: figure out device name
+    "/dev/input/event0"
 )
 COMMANDS_ENDPOINT = os.getenv(
     "COMMANDS_ENDPOINT",
@@ -26,6 +27,7 @@ COMMAND_MAP = {
     "KEY_PAUSE": "pause",
     "KEY_LEFT": "seek_backward",
     "KEY_RIGHT": "seek_forward",
+    "KEY_ENTER": "play_pause",
 }
 
 
@@ -66,15 +68,46 @@ def stdin_commands() -> Iterator[str]:
             logger.info("Mock remote input closed.")
             return
 
-def serial_commands() -> Iterator[str]:
-    raise NotImplementedError()  # TODO: write
+def hid_commands() -> Iterator[str]:
+    logger.info("Connecting to remote at %s...", INPUT_DEVICE)
+
+    device = InputDevice(INPUT_DEVICE)
+
+    logger.info(
+        'Remote connected: "%s"',
+        device.name,
+    )
+
+    for event in device.read_loop():
+        if event.type != ecodes.EV_KEY:
+            continue
+
+        key_event = categorize(event)
+
+        # Only respond to the initial button press.
+        # 0 = released
+        # 1 = pressed
+        # 2 = held / autorepeat
+        if key_event.keystate != key_event.key_down:
+            continue
+
+        key = key_event.keycode
+
+        # evdev can occasionally return multiple keycodes.
+        if isinstance(key, list):
+            for keycode in key:
+                logger.info("Remote key pressed: %s", keycode)
+                yield keycode
+        else:
+            logger.info("Remote key pressed: %s", key)
+            yield key
 
 
 def get_commands() -> Iterator[str]:
     if INPUT_DEVICE == 'stdin':
         return stdin_commands()
     else:
-        return serial_commands()
+        return hid_commands()
 
 
 def main() -> None:

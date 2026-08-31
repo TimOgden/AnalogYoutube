@@ -121,8 +121,6 @@
         currentSessionId = sessionId;
         sequence = 0;
 
-        document.getElementById("waiting").style.display = "none";
-
         player.loadVideoById({
             videoId: videoId
         });
@@ -181,7 +179,7 @@
 
             switch (message.type) {
                 case "play":
-                    player.loadVideoById(message.video_id, message.session_id);
+                    playVideo(message.video_id, message.session_id);
                     break;
 
                 case "control":
