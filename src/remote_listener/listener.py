@@ -1,5 +1,6 @@
 import logging
 import os
+from time import sleep
 from typing import Iterator
 from evdev import InputDevice, categorize, ecodes
 
@@ -29,6 +30,8 @@ COMMAND_MAP = {
     "KEY_RIGHT": "seek_forward",
     "KEY_ENTER": "play_pause",
 }
+
+SLEEP_TIME = 10
 
 
 def handle_command(command: str) -> None:
@@ -64,48 +67,64 @@ def stdin_commands() -> Iterator[str]:
             return
 
 def hid_commands() -> Iterator[str]:
-    logger.info("Connecting to remote at %s...", INPUT_DEVICE)
 
-    device = InputDevice(INPUT_DEVICE)
-    logger.info('Remote connected: "%s"', device.name)
+    while True:
+        device: InputDevice | None = None
 
-    for event in device.read_loop():
-        if event.type != ecodes.EV_KEY:
-            continue
+        try:
+            logger.info("Connecting to remote at %s...", INPUT_DEVICE)
 
-        key_event = categorize(event)
-        keys = key_event.keycode
+            device = InputDevice(INPUT_DEVICE)
 
-        if not isinstance(keys, list):
-            keys = [keys]
+            logger.info("Remote connected.")
+            for event in device.read_loop():
+                if event.type != ecodes.EV_KEY:
+                    continue
+        
+                key_event = categorize(event)
+                keys = key_event.keycode
+        
+                if not isinstance(keys, list):
+                    keys = [keys]
+        
+                for keycode in keys:
+                    if keycode == "KEY_RIGHT":
+                        if key_event.keystate == key_event.key_hold:
+                            yield "scrub_forward_start"
+                        elif key_event.keystate == key_event.key_down:
+                            yield "seek_forward"
+                        elif key_event.keystate == key_event.key_up:
+                            yield "scrub_stop"
+                        continue
+        
+                    if keycode == "KEY_LEFT":
+                        if key_event.keystate == key_event.key_hold:
+                            yield "scrub_backward_start"
+                        elif key_event.keystate == key_event.key_down:
+                            yield "seek_backward"
+                        elif key_event.keystate == key_event.key_up:
+                            yield "scrub_stop"
+                        continue
+        
+                    # Ordinary buttons only fire once on key-down
+                    if key_event.keystate != key_event.key_down:
+                        continue
+        
+                    command = COMMAND_MAP.get(keycode)
+                    if command is None:
+                        logger.info(f'Unhandled keycode: {keycode}')
+                    yield command
 
-        for keycode in keys:
-            if keycode == "KEY_RIGHT":
-                if key_event.keystate == key_event.key_hold:
-                    yield "scrub_forward_start"
-                elif key_event.keystate == key_event.key_down:
-                    yield "seek_forward"
-                elif key_event.keystate == key_event.key_up:
-                    yield "scrub_stop"
-                continue
-
-            if keycode == "KEY_LEFT":
-                if key_event.keystate == key_event.key_hold:
-                    yield "scrub_backward_start"
-                elif key_event.keystate == key_event.key_down:
-                    yield "seek_backward"
-                elif key_event.keystate == key_event.key_up:
-                    yield "scrub_stop"
-                continue
-
-            # Ordinary buttons only fire once on key-down
-            if key_event.keystate != key_event.key_down:
-                continue
-
-            command = COMMAND_MAP.get(keycode)
-            if command is None:
-                logger.info(f'Unhandled keycode: {keycode}')
-            yield command
+        except (
+            OSError,
+        ) as e:
+            logger.warning(
+                "Remote unavailable or disconnected: %s. "
+                "Retrying in %s seconds...",
+                e,
+                SLEEP_TIME,
+            )
+            sleep(SLEEP_TIME)
 
 
 def get_commands() -> Iterator[str]:
