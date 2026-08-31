@@ -53,7 +53,6 @@ class WatchSession:
     def handle_progress(self, actual_video_id: str) -> None:
         self.is_playing = True
         if actual_video_id != self.video_id:
-            self.end()
             return
 
         self._accumulate_watch_time()
