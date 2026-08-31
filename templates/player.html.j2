@@ -47,6 +47,48 @@
     let currentSessionId = null;
     let sequence = 0;
     let socker = null;
+    let scrubInterval = null;
+    let scrubStartedAt = null;
+
+    function startScrubbing(direction) {
+        stopScrubbing();
+
+        scrubStartedAt = Date.now();
+
+        // Give a tap an immediate small seek.
+        player.seekTo(
+            player.getCurrentTime() + (direction * 2),
+            true
+        );
+
+        scrubInterval = setInterval(() => {
+            const heldForSeconds = (Date.now() - scrubStartedAt) / 1000;
+
+            let seekAmount;
+
+            if (heldForSeconds < 2) {
+                seekAmount = 1;
+            } else if (heldForSeconds < 5) {
+                seekAmount = 3;
+            } else {
+                seekAmount = 8;
+            }
+
+            player.seekTo(
+                player.getCurrentTime() + (direction * seekAmount),
+                true
+            );
+        }, 250);
+    }
+
+    function stopScrubbing() {
+        if (scrubInterval !== null) {
+            clearInterval(scrubInterval);
+            scrubInterval = null;
+        }
+
+        scrubStartedAt = null;
+    }
 
     function sendPlayerState(state) {
         if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -129,6 +171,12 @@
     }
 
     function handleControl(command) {
+        const actualVideoId =
+            player.getVideoData()?.video_id ?? null;
+        if (actualVideoId === null) {
+            return;
+        }
+
         console.log(`Received command: ${command}`);
         switch (command) {
             case "play":
@@ -162,6 +210,17 @@
                     Math.max(player.getCurrentTime() - 10, 0),
                     true
                 );
+                break;
+            case "scrub_forward_start":
+                startScrubbing(5);
+                break;
+
+            case "scrub_backward_start":
+                startScrubbing(-5);
+                break;
+
+            case "scrub_stop":
+                stopScrubbing();
                 break;
         }
     }

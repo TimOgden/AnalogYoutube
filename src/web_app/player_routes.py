@@ -33,6 +33,9 @@ class PlayerCommand(str, Enum):
     PLAY_PAUSE = "play_pause"
     SEEK_FORWARD = "seek_forward"
     SEEK_BACKWARD = "seek_backward"
+    SCRUB_FORWARD = "scrub_forward_start"
+    SCRUB_BACKWARD = "scrub_backward_start"
+    SCRUB_STOP = "scrub_stop"
 
 
 class ControlRequest(BaseModel):

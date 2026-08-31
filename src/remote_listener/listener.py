@@ -31,12 +31,7 @@ COMMAND_MAP = {
 }
 
 
-def handle_key(key: str) -> None:
-    command = COMMAND_MAP.get(key)
-
-    if command is None:
-        return
-
+def handle_command(command: str) -> None:
     logger.info(f'Submitting command: "{command}" to FastAPI endpoint...')
     try:
         response = requests.post(
@@ -72,35 +67,45 @@ def hid_commands() -> Iterator[str]:
     logger.info("Connecting to remote at %s...", INPUT_DEVICE)
 
     device = InputDevice(INPUT_DEVICE)
-
-    logger.info(
-        'Remote connected: "%s"',
-        device.name,
-    )
+    logger.info('Remote connected: "%s"', device.name)
 
     for event in device.read_loop():
         if event.type != ecodes.EV_KEY:
             continue
 
         key_event = categorize(event)
+        keys = key_event.keycode
 
-        # Only respond to the initial button press.
-        # 0 = released
-        # 1 = pressed
-        # 2 = held / autorepeat
-        if key_event.keystate != key_event.key_down:
-            continue
+        if not isinstance(keys, list):
+            keys = [keys]
 
-        key = key_event.keycode
+        for keycode in keys:
+            if keycode == "KEY_RIGHT":
+                if key_event.keystate == key_event.key_hold:
+                    yield "scrub_forward_start"
+                elif key_event.keystate == key_event.key_down:
+                    yield "seek_forward"
+                elif key_event.keystate == key_event.key_up:
+                    yield "scrub_stop"
+                continue
 
-        # evdev can occasionally return multiple keycodes.
-        if isinstance(key, list):
-            for keycode in key:
-                logger.info("Remote key pressed: %s", keycode)
-                yield keycode
-        else:
-            logger.info("Remote key pressed: %s", key)
-            yield key
+            if keycode == "KEY_LEFT":
+                if key_event.keystate == key_event.key_hold:
+                    yield "scrub_backward_start"
+                elif key_event.keystate == key_event.key_down:
+                    yield "seek_backward"
+                elif key_event.keystate == key_event.key_up:
+                    yield "scrub_stop"
+                continue
+
+            # Ordinary buttons only fire once on key-down
+            if key_event.keystate != key_event.key_down:
+                continue
+
+            command = COMMAND_MAP.get(keycode)
+            if command is None:
+                logger.info(f'Unhandled keycode: {keycode}')
+            yield command
 
 
 def get_commands() -> Iterator[str]:
@@ -114,7 +119,7 @@ def main() -> None:
     logger.info('Starting remote listener...')
 
     for command in get_commands():
-        handle_key(command)
+        handle_command(command)
 
 
 if __name__ == '__main__':
