@@ -10,7 +10,6 @@ import pandas as pd
 
 from src.db_utils import get_connection
 
-active_sessions: dict[str, WatchSession] = {}
 logger = logging.getLogger(__name__)
 
 
@@ -161,3 +160,6 @@ def submit_new_session(session: WatchSession, conn: Connection) -> None:
     conn.execute("""INSERT INTO playback_sessions
                 (id, video_id, created_at)
                 VALUES (?, ?, ?)""", (session.session_id, session.video_id, now))
+
+
+active_sessions: dict[str, WatchSession] = {}

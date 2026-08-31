@@ -1,9 +1,11 @@
 #!/bin/bash
 
 LOG="$HOME/analog-youtube-kiosk.log"
+
 exec >>"$LOG" 2>&1
 set -x
 
+echo "Starting Analog YouTube kiosk"
 echo "DISPLAY=$DISPLAY"
 echo "WAYLAND_DISPLAY=$WAYLAND_DISPLAY"
 echo "XDG_SESSION_TYPE=$XDG_SESSION_TYPE"
@@ -13,7 +15,10 @@ while ! curl -sf http://127.0.0.1:8000/player >/dev/null; do
     sleep 2
 done
 
+echo "FastAPI available. Starting Chromium."
+
 exec /usr/bin/chromium \
+    --ozone-platform=wayland \
     --kiosk \
     --noerrdialogs \
     --disable-infobars \
