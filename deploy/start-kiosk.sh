@@ -1,25 +1,17 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
+LOG="$HOME/analog-youtube-kiosk.log"
+exec >>"$LOG" 2>&1
 set -x
 
-LOG_FILE="$HOME/analog-youtube-kiosk.log"
+echo "DISPLAY=$DISPLAY"
+echo "WAYLAND_DISPLAY=$WAYLAND_DISPLAY"
+echo "XDG_SESSION_TYPE=$XDG_SESSION_TYPE"
 
-exec >>"$LOG_FILE" 2>&1
-
-echo "Starting Analog YouTube kiosk at $(date)"
-
-echo "Waiting for FastAPI..."
-
-until curl \
-    --silent \
-    --fail \
-    http://127.0.0.1:8000/player \
-    >/dev/null
-do
+while ! curl -sf http://127.0.0.1:8000/player >/dev/null; do
+    echo "Waiting for FastAPI..."
     sleep 2
 done
-
-echo "FastAPI available. Starting Chromium."
 
 exec /usr/bin/chromium \
     --kiosk \
