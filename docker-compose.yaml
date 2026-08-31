@@ -41,7 +41,7 @@ services:
 
     environment:
       COMMANDS_ENDPOINT: http://web:8000/api/control
-      INPUT_DEVICE: /dev/input/event0
+      INPUT_DEVICE: /dev/input/by-id/usb-XING_WEI_2.4G_USB_USB_Composite_Device-if02-event-kbd
   
     depends_on:
       - web
