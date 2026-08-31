@@ -36,6 +36,9 @@ services:
     command: python -m src.remote_listener.listener
     restart: unless-stopped
 
+    devices:
+    - /dev/input/event0:/dev/input/event0
+
     environment:
       COMMANDS_ENDPOINT: http://web:8000/api/control
       INPUT_DEVICE: /dev/input/event0
