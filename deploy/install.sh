@@ -39,6 +39,8 @@ sudo systemctl enable analog-youtube.service
 
 echo "Installing Chromium autostart..."
 
+chmod +x "$PROJECT_DIR/deploy/start-kiosk.sh"
+
 mkdir -p "$HOME/.config/autostart"
 cp "$AUTOSTART_FILE" \
     "$HOME/.config/autostart/analog-youtube-kiosk.desktop"
