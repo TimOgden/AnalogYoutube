@@ -1,7 +1,8 @@
 CREATE TABLE IF NOT EXISTS videos (
                 video_id TEXT PRIMARY KEY,
                 youtube_url TEXT NOT NULL UNIQUE,
-                title TEXT NOT NULL
+                title TEXT NOT NULL,
+                author_name TEXT NOT NULL
             );
 
 CREATE TABLE IF NOT EXISTS playback_sessions (

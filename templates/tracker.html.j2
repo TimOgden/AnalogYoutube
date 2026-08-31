@@ -29,6 +29,7 @@
                 <thead>
                     <tr>
                         <th>Video Title</th>
+                        <th>Author Name</th>
                         <th>Minutes Watched</th>
                         {# Add other useful columns if necessary #}
                     </tr>
@@ -37,7 +38,8 @@
                     {% for index, row in tracking_data.iterrows() %}
                     <tr>
                         <td>{{ row['title'] }}</td>
-                        <td>{{ row['watched_minutes'] }}</td>
+                        <td>{{ row['author_name'] }}</td>
+                        <td>{{ row['watched_minutes'] | round(2) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
