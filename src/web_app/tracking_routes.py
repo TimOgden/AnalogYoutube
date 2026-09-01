@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 templates = Jinja2Templates(directory='templates')
 
 
-@router.get("/tracking")
-async def get_tracking(request: Request) -> HTMLResponse:
+@router.get("/api/tracking")
+async def get_tracking() -> list[dict]:
     time_in_days = 14
     start_time = datetime.datetime.now() - datetime.timedelta(days=time_in_days)
 
@@ -26,12 +26,4 @@ async def get_tracking(request: Request) -> HTMLResponse:
         df = player_utils.get_usage_since_per_video(conn=conn, start_time=start_time)
     df['watched_minutes'] = df['watched_seconds'] / 60
 
-    try:
-        return templates.TemplateResponse(
-                request,
-                "tracker.html.j2",
-                {'tracking_data': df},
-            )
-    except Exception as e:
-        logger.error(e)
-        return HTMLResponse("<h1>Tracking Error</h1><p>Could not load viewing history.</p>", status_code=500)
+    return df.to_dict(orient='records')

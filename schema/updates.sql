@@ -1,1 +1,1 @@
-ALTER TABLE videos ADD COLUMN author_name TEXT NOT NULL;
+-- ALTER TABLE videos ADD COLUMN author_name TEXT NOT NULL;
