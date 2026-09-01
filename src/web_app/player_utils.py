@@ -8,6 +8,7 @@ import uuid
 
 import pandas as pd
 
+from src import db_utils
 from src.db_utils import get_connection
 
 logger = logging.getLogger(__name__)
@@ -124,7 +125,23 @@ def create_watch_session(video_id: str) -> WatchSession:
 
 
 def get_session(session_id: str) -> WatchSession:
-    return active_sessions[session_id]
+    try:
+        return active_sessions[session_id]
+    except KeyError:
+        active_sessions = _reload_active_sessions()
+        return active_sessions[session_id]
+
+
+def _reload_active_sessions() -> dict[str, WatchSession]:
+    logger.info('Reloading sessions from db...')
+    active_sessions = {}
+
+    with db_utils.get_connection() as conn:
+        cur = conn.cursor()
+        cur.execute("""SELECT * FROM playback_sessions ORDER BY created_at DESC LIMIT 100""")
+        rows = cur.fetchmany()
+        for row in rows:
+            active_sessions[row['id']] = WatchSession(video_id=row['video_id'], session_id=row['session_id'])
 
 
 def get_usage_since(cur: Cursor, start_time: datetime.datetime) -> float:
