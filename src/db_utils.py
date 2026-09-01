@@ -7,6 +7,7 @@ from typing import Iterator
 
 DATABASE_PATH = pathlib.Path(os.getenv('database_path', './data/analog-youtube.db'))
 SCHEMA_PATH = pathlib.Path(os.getenv('schema_path', './schema/schema.sql'))
+UPDATES_PATH = pathlib.Path(os.getenv('updates_path', './schema/updates.sql'))
 
 logger = logging.getLogger()
 
@@ -18,6 +19,9 @@ def initialize_database() -> None:
         connection.execute("PRAGMA journal_mode=WAL")
 
         with open(SCHEMA_PATH, 'r') as f:
+            connection.executescript(f.read())
+
+        with open(UPDATES_PATH, 'r') as f:
             connection.executescript(f.read())
 
         connection.commit()
