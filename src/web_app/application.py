@@ -1,10 +1,14 @@
 from contextlib import asynccontextmanager
 import io
+import os
 import pathlib
 import tempfile
 import zipfile
 
 import logging
+
+from pydantic import BaseModel
+import uvicorn
 
 from src.qr_listener import qr_generator_utils
 from src import youtube_utils, db_utils
@@ -60,13 +64,13 @@ def index() -> str:
     """
 
 
-@app.post("/generate")
-def generate(urls: str = Form(...)) -> StreamingResponse:
-    video_urls = [
-        line.strip()
-        for line in urls.splitlines()
-        if line.strip()
-    ]
+class GenerateRequest(BaseModel):
+    urls: list[str]
+
+
+@app.post("/api/generate")
+def generate(request: GenerateRequest) -> StreamingResponse:
+    video_urls = request.urls
 
     zip_buffer = io.BytesIO()
 
@@ -108,3 +112,11 @@ app.include_router(player_router)
 app.include_router(tracking_router)
 
 # chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --disable-session-crached-bubble --autoplay-policy=no-user-gesture-required http://127.0.0.1:8000/player
+
+
+def main() -> None:
+    uvicorn.run(app, host='0.0.0.0', port=int(os.getenv('PORT_NUMBER', 8000)))
+
+
+if __name__ == '__main__':
+    main()
