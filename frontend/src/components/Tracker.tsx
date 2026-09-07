@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
     Box,
+    Button,
     Paper,
     Table,
     TableBody,
@@ -18,16 +19,24 @@ type TrackingRow = {
     watched_minutes: number;
 };
 
+const durations = [
+    { label: "All Time", value: 3650 }, // 10 years
+    { label: "Last 14 Days", value: 14 },
+    { label: "Last 30 Days", value: 30 },
+    { label: "Last 90 Days", value: 90 }
+];
+
 
 export default function Tracker() {
     const [trackingData, setTrackingData] = useState<TrackingRow[] | null>(null);
+    const [selectedDuration, setSelectedDuration] = useState(durations[0].value);
 
     useEffect(() => {
-        getTrackingData()
+        getTrackingData(selectedDuration)
             .then(setTrackingData)
             .catch(console.error);
-    }, []);
-    
+    }, [selectedDuration]);
+
     return (
         <Box
             sx={{
@@ -46,6 +55,22 @@ export default function Tracker() {
                 >
                     📺 Viewing History
                 </Typography>
+            </Box>
+            <Box sx={{ mb: 4 }}>
+                {durations.map((duration) => (
+                    <Button
+                        key={duration.value}
+                        variant={
+                            selectedDuration === duration.value
+                                ? "contained"
+                                : "outlined"
+                        }
+                        onClick={() => setSelectedDuration(duration.value)}
+                        sx={{ mr: 2, mb: 1 }}
+                    >
+                        {duration.label}
+                    </Button>
+                ))}
             </Box>
 
             {!trackingData || trackingData.length === 0 ? (

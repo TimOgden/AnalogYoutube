@@ -4,8 +4,8 @@ export type TrackingRow = {
     watched_minutes: number;
 };
 
-export async function getTrackingData(): Promise<TrackingRow[]> {
-    const response = await fetch("/api/tracking");
+export async function getTrackingData(selectedDuration: number): Promise<TrackingRow[]> {
+    const response = await fetch(`/api/tracking?duration=${selectedDuration}`);
 
     if (!response.ok) {
         throw new Error(`Request failed: ${response.status}`);

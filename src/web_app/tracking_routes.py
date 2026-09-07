@@ -18,8 +18,8 @@ templates = Jinja2Templates(directory='templates')
 
 
 @router.get("/api/tracking")
-async def get_tracking() -> list[dict]:
-    time_in_days = 14
+async def get_tracking(duration: int) -> list[dict]:
+    time_in_days = duration
     start_time = datetime.datetime.now() - datetime.timedelta(days=time_in_days)
 
     with db_utils.get_connection() as conn:
