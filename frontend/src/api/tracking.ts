@@ -4,7 +4,12 @@ export type TrackingRow = {
     watched_minutes: number;
 };
 
-export async function getTrackingData(selectedDuration: number): Promise<TrackingRow[]> {
+export type TrackingResponse = {
+    by_video_df: TrackingRow[];
+    total_watched_minutes: number;
+};
+
+export async function getTrackingData(selectedDuration: number): Promise<TrackingResponse> {
     const response = await fetch(`/api/tracking?duration=${selectedDuration}`);
 
     if (!response.ok) {

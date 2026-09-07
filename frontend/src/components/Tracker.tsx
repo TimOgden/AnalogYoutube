@@ -29,11 +29,28 @@ const durations = [
 
 export default function Tracker() {
     const [trackingData, setTrackingData] = useState<TrackingRow[] | null>(null);
+    const [totalWatchedMinutes, setTotalWatchedMinutes] = useState<number | null>(null);
     const [selectedDuration, setSelectedDuration] = useState(durations[0].value);
+
+
+    function formatWatchedMinutes(watchedMinutes: number): string {
+        if (watchedMinutes < 1) {
+            return `${(watchedMinutes * 60).toFixed(0)} seconds`;
+        } else if (watchedMinutes < 60) {
+            return `${watchedMinutes.toFixed(2)} minutes`;
+        }
+
+        const hours = Math.floor(watchedMinutes / 60);
+        const minutes = Math.floor(watchedMinutes % 60);
+        return `${hours} hours ${minutes} minutes`;
+    }
 
     useEffect(() => {
         getTrackingData(selectedDuration)
-            .then(setTrackingData)
+            .then((response) => {
+                setTrackingData(response.by_video_df);
+                setTotalWatchedMinutes(response.total_watched_minutes);
+            })
             .catch(console.error);
     }, [selectedDuration]);
 
@@ -81,64 +98,69 @@ export default function Tracker() {
                     </Typography>
                 </Paper>
             ) : (
-                <TableContainer
-                    component={Paper}
-                    sx={{
-                        borderRadius: 2,
-                        overflow: "hidden",
-                    }}
-                >
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell sx={{ fontWeight: 700 }}>
-                                    Video
-                                </TableCell>
-
-                                <TableCell sx={{ fontWeight: 700 }}>
-                                    Author
-                                </TableCell>
-
-                                <TableCell
-                                    align="right"
-                                    sx={{ fontWeight: 700 }}
-                                >
-                                    Minutes Watched
-                                </TableCell>
-                            </TableRow>
-                        </TableHead>
-
-                        <TableBody>
-                            {trackingData.map((row, index) => (
-                                <TableRow
-                                    key={`${row.title}-${index}`}
-                                    hover
-                                    sx={{
-                                        "&:last-child td": {
-                                            borderBottom: 0,
-                                        },
-                                    }}
-                                >
-                                    <TableCell>
-                                        <Typography fontWeight={500}>
-                                            {row.title}
-                                        </Typography>
+                <>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                        Total Watch Time: {formatWatchedMinutes(totalWatchedMinutes ?? 0)}
+                    </Typography>
+                    <TableContainer
+                        component={Paper}
+                        sx={{
+                            borderRadius: 2,
+                            overflow: "hidden",
+                        }}
+                    >
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 700 }}>
+                                        Video
                                     </TableCell>
 
-                                    <TableCell>
-                                        {row.author_name}
+                                    <TableCell sx={{ fontWeight: 700 }}>
+                                        Author
                                     </TableCell>
 
-                                    <TableCell align="right">
-                                        {Number(
-                                            row.watched_minutes
-                                        ).toFixed(2)}
+                                    <TableCell
+                                        align="right"
+                                        sx={{ fontWeight: 700 }}
+                                    >
+                                        Minutes Watched
                                     </TableCell>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                            </TableHead>
+
+                            <TableBody>
+                                {trackingData.map((row, index) => (
+                                    <TableRow
+                                        key={`${row.title}-${index}`}
+                                        hover
+                                        sx={{
+                                            "&:last-child td": {
+                                                borderBottom: 0,
+                                            },
+                                        }}
+                                    >
+                                        <TableCell>
+                                            <Typography fontWeight={500}>
+                                                {row.title}
+                                            </Typography>
+                                        </TableCell>
+
+                                        <TableCell>
+                                            {row.author_name}
+                                        </TableCell>
+
+                                        <TableCell align="right">
+                                            {Number(
+                                                row.watched_minutes
+                                            ).toFixed(2)}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </>
             )}
         </Box>
     );

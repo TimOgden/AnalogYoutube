@@ -9,6 +9,7 @@ import pandas as pd
 
 from src import db_utils
 from src.web_app import player_utils
+from src.web_app.tracking_models import TrackingResponse
 
 router = APIRouter()
 
@@ -18,7 +19,7 @@ templates = Jinja2Templates(directory='templates')
 
 
 @router.get("/api/tracking")
-async def get_tracking(duration: int) -> list[dict]:
+async def get_tracking(duration: int) -> TrackingResponse:
     time_in_days = duration
     start_time = datetime.datetime.now() - datetime.timedelta(days=time_in_days)
 
@@ -26,4 +27,5 @@ async def get_tracking(duration: int) -> list[dict]:
         df = player_utils.get_usage_since_per_video(conn=conn, start_time=start_time)
     df['watched_minutes'] = df['watched_seconds'] / 60
 
-    return df.to_dict(orient='records')
+    total_watched_minutes = df['watched_minutes'].sum()
+    return TrackingResponse(by_video_df=df.to_dict(orient='records'), total_watched_minutes=total_watched_minutes)
