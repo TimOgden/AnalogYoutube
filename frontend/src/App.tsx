@@ -5,8 +5,9 @@ import Header from "./components/Header"
 
 const pages = [
   {tabId: 0, label: 'Card Generator', component: <QRGenerator />},
-  {tabId: 1, label: 'Tracker', component: <Tracker />},
-  {tabId: 2, label: 'Settings', component: <div>Settings</div>},
+  {tabId: 1, label: 'Library', component: <div>Library</div>},
+  {tabId: 2, label: 'Tracker', component: <Tracker />},
+  {tabId: 3, label: 'Settings', component: <div>Settings</div>},
 ]
 
 

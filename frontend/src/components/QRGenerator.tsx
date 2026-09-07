@@ -1,5 +1,5 @@
 import { useState } from "react";
-import styles from "./QRGenerator.module.less";
+import styles from "./styles/QRGenerator.module.less";
 import { TextField } from "@mui/material";
 import { submitUrls } from '../api/qrGeneration.ts';
 
