@@ -1,0 +1,97 @@
+.page {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 3rem;
+    line-height: 1.1;
+}
+
+.header p {
+    margin: 12px 0 0;
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.card {
+    padding: 32px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
+}
+
+.card h2 {
+    margin: 0 0 8px;
+    font-size: 1.5rem;
+}
+
+.description {
+    margin: 0 0 28px;
+    color: #666;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.form label {
+    font-weight: 600;
+}
+
+.form textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 180px;
+    padding: 14px;
+
+    font: inherit;
+    line-height: 1.5;
+
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    resize: vertical;
+}
+
+.form textarea:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+    border-color: transparent;
+}
+
+.form button {
+    align-self: flex-start;
+
+    margin-top: 8px;
+    padding: 12px 22px;
+
+    font: inherit;
+    font-weight: 600;
+
+    border: 0;
+    border-radius: 8px;
+
+    background: #111;
+    color: white;
+
+    cursor: pointer;
+}
+
+.form button:hover:not(:disabled) {
+    background: #333;
+}
+
+.form button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
