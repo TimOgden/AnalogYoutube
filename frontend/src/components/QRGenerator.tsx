@@ -28,23 +28,15 @@ export default function Generator() {
 
     return (
         <main className={styles.page}>
-            <header className={styles.header}>
-                <h1>Analog YouTube</h1>
-                <p>Turn YouTube videos into physical cards.</p>
-            </header>
 
             <section className={styles.card}>
                 <h2>Create Cards</h2>
 
                 <p className={styles.description}>
                     Paste YouTube URLs below to generate printable QR cards.
-                    Add one URL per line.
                 </p>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
-                    <label htmlFor="youtube-urls">
-                        YouTube URLs
-                    </label>
 
                     <TextField
                         id="youtube-urls"
