@@ -46,11 +46,6 @@ export default function Tracker() {
                 >
                     📺 Viewing History
                 </Typography>
-
-                <Typography variant="body1" color="text.secondary">
-                    See what has been watched and how much time was spent
-                    watching each video.
-                </Typography>
             </Box>
 
             {!trackingData || trackingData.length === 0 ? (
