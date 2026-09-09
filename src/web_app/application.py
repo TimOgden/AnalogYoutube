@@ -13,7 +13,7 @@ import uvicorn
 from src.qr_listener import qr_generator_utils
 from src import youtube_utils, db_utils
 
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
 from dotenv import load_dotenv
 
@@ -64,12 +64,12 @@ def index() -> str:
     """
 
 
-class GenerateRequest(BaseModel):
+class URLGenerateRequest(BaseModel):
     urls: list[str]
 
 
-@app.post("/api/generate")
-def generate(request: GenerateRequest) -> StreamingResponse:
+@app.post("/api/generate/urls")
+async def generate(request: URLGenerateRequest) -> StreamingResponse:
     video_urls = request.urls
 
     zip_buffer = io.BytesIO()
@@ -82,7 +82,10 @@ def generate(request: GenerateRequest) -> StreamingResponse:
         for url in video_urls:
             video = youtube_utils.get_youtube_video(url)
             videos.append(video)
-            html_filepath = qr_generator_utils.populate_qr_code_template(video, output_dir=output_dir)
+
+            card = qr_generator_utils.create_card_from_youtube(video)
+            
+            html_filepath = qr_generator_utils.populate_qr_code_template(card, output_path=output_dir / f'{card.title}.html')
             html_files.append(html_filepath)
         with db_utils.get_connection() as cur:
             youtube_utils.submit_videos_to_db(cur, videos)
@@ -105,6 +108,40 @@ def generate(request: GenerateRequest) -> StreamingResponse:
                 'attachment; filename="youtube-qr-codes.zip"'
         },
     )
+
+@app.post("/generate/files")
+async def generate_files(files: list[UploadFile] = File(...)) -> StreamingResponse:
+    zip_buffer = io.BytesIO()
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_dir = pathlib.Path(temp_dir)
+
+        html_files = []
+        for file in files:
+            logger.info(f"Processing file: {file.filename}...")
+            card = qr_generator_utils.create_card_from_file()
+            html_filepath = qr_generator_utils.populate_qr_code_template_from_file(file.file.read(), output_dir=output_dir)
+            html_files.append(html_filepath)
+
+        with zipfile.ZipFile(
+            zip_buffer,
+            mode="w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as archive:
+            for file_path in html_files:
+                archive.write(file_path, arcname=file_path.name)
+
+    zip_buffer.seek(0)
+
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition":
+                'attachment; filename="local-qr-codes.zip"'
+        },
+    )
+
 
 from src.web_app.player_routes import router as player_router
 from src.web_app.tracking_routes import router as tracking_router

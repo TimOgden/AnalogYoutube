@@ -3,7 +3,7 @@ import sqlite3
 import requests
 from dataclasses import dataclass
 from pytubefix import YouTube
-from PIL import Image
+from PIL.Image import Image
 import logging
 
 

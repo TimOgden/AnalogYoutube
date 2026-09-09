@@ -67,6 +67,14 @@ export default function LocalUploadQRGenerator() {
                         {Array.from(files).map((file) => (
                             <div key={`${file.name}-${file.lastModified}`}>
                                 <span>{file.name}</span>
+                                <input
+                                    type="text"
+                                    placeholder="Enter a title for this file..."
+                                    onChange={(e) => {
+                                        const title = e.target.value;
+                                        
+                                    }}
+                                />
                                 <button
                                     type="button"
                                     aria-label={`Remove ${file.name}`}

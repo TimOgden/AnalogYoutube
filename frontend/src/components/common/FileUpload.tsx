@@ -18,6 +18,7 @@ export default function FileUpload(setFiles: (files: FileList | null) => void) {
             Upload Files
             <input
                 type="file"
+                accept=".mp4,.mov,.avi,.mkv,.flv,.wmv,.webm"
                 hidden
                 multiple
                 onChange={handleFileChange}
