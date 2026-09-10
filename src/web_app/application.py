@@ -10,10 +10,9 @@ import logging
 from pydantic import BaseModel
 import uvicorn
 
-from src.qr_listener import qr_generator_utils
-from src import youtube_utils, db_utils
+from src import video_ingestion, youtube_utils, db_utils, local_files_utils
 
-from fastapi import FastAPI, Form, File, UploadFile
+from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
 from dotenv import load_dotenv
 
@@ -77,18 +76,14 @@ async def generate(request: URLGenerateRequest) -> StreamingResponse:
     with tempfile.TemporaryDirectory() as temp_dir:
         output_dir = pathlib.Path(temp_dir)
 
-        html_files = []
         videos = []
         for url in video_urls:
-            video = youtube_utils.get_youtube_video(url)
+            video = youtube_utils.ingest_video(url)
             videos.append(video)
 
-            card = qr_generator_utils.create_card_from_youtube(video)
-            
-            html_filepath = qr_generator_utils.populate_qr_code_template(card, output_path=output_dir / f'{card.title}.html')
-            html_files.append(html_filepath)
         with db_utils.get_connection() as cur:
-            youtube_utils.submit_videos_to_db(cur, videos)
+            video_ingestion.save_videos(cur, videos)
+        html_files = video_ingestion.to_html_files(videos, output_dir)
 
         with zipfile.ZipFile(
             zip_buffer,
@@ -116,12 +111,15 @@ async def generate_files(files: list[UploadFile] = File(...)) -> StreamingRespon
     with tempfile.TemporaryDirectory() as temp_dir:
         output_dir = pathlib.Path(temp_dir)
 
-        html_files = []
+        videos = []
         for file in files:
             logger.info(f"Processing file: {file.filename}...")
-            card = qr_generator_utils.create_card_from_file()
-            html_filepath = qr_generator_utils.populate_qr_code_template_from_file(file.file.read(), output_dir=output_dir)
-            html_files.append(html_filepath)
+            video = local_files_utils.ingest_video(file)
+            videos.append(video)
+
+        with db_utils.get_connection() as con:
+            html_files = video_ingestion.save_videos(con, videos)
+        html_files = video_ingestion.to_html_files(videos, output_dir)
 
         with zipfile.ZipFile(
             zip_buffer,
