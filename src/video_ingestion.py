@@ -1,7 +1,12 @@
 from dataclasses import dataclass, field
 from enum import Enum
+import io
 from pathlib import Path
+import pathlib
+from typing import Callable
 from sqlite3 import Connection
+import tempfile
+import zipfile
 from src.qr_listener.qr_generator_utils import populate_qr_code_template
 
 
@@ -21,7 +26,34 @@ class Video:
     author_name: str | None = field(default=None)
 
 
-def save_videos(con: Connection, videos: list[Video]) -> None:
+def process_submissions(con: Connection, submissions: list,
+                        ingestion_func: Callable) -> io.BytesIO:
+    zip_buffer = io.BytesIO()
+    
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_dir = pathlib.Path(temp_dir)
+
+        videos = []
+        for submission in submissions:
+            video = ingestion_func(submission)
+            videos.append(video)
+
+        html_files = _save_videos(con, videos)
+        html_files = _to_html_files(videos, output_dir)
+        
+        with zipfile.ZipFile(
+            zip_buffer,
+            mode="w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as archive:
+            for file_path in html_files:
+                archive.write(file_path, arcname=file_path.name)
+
+    zip_buffer.seek(0)
+    return zip_buffer
+
+
+def _save_videos(con: Connection, videos: list[Video]) -> None:
     sql = """INSERT INTO videos (
         video_id,
         title,
@@ -45,7 +77,7 @@ def save_videos(con: Connection, videos: list[Video]) -> None:
     con.executemany(sql, param_list)
 
 
-def to_html_files(videos: list[Video], output_dir: Path) -> list[Path]:
+def _to_html_files(videos: list[Video], output_dir: Path) -> list[Path]:
     filepaths = []
     for video in videos:
         path = populate_qr_code_template(video, 

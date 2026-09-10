@@ -71,29 +71,9 @@ class URLGenerateRequest(BaseModel):
 async def generate(request: URLGenerateRequest) -> StreamingResponse:
     video_urls = request.urls
 
-    zip_buffer = io.BytesIO()
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        output_dir = pathlib.Path(temp_dir)
-
-        videos = []
-        for url in video_urls:
-            video = youtube_utils.ingest_video(url)
-            videos.append(video)
-
-        with db_utils.get_connection() as cur:
-            video_ingestion.save_videos(cur, videos)
-        html_files = video_ingestion.to_html_files(videos, output_dir)
-
-        with zipfile.ZipFile(
-            zip_buffer,
-            mode="w",
-            compression=zipfile.ZIP_DEFLATED,
-        ) as archive:
-            for file_path in html_files:
-                archive.write(file_path, arcname=file_path.name)
-
-    zip_buffer.seek(0)
+    with db_utils.get_connection() as con:
+        zip_buffer = video_ingestion.process_submissions(con, video_urls,
+                                                         ingestion_func=youtube_utils.ingest_video)
 
     return StreamingResponse(
         zip_buffer,
@@ -106,30 +86,9 @@ async def generate(request: URLGenerateRequest) -> StreamingResponse:
 
 @app.post("/generate/files")
 async def generate_files(files: list[UploadFile] = File(...)) -> StreamingResponse:
-    zip_buffer = io.BytesIO()
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        output_dir = pathlib.Path(temp_dir)
-
-        videos = []
-        for file in files:
-            logger.info(f"Processing file: {file.filename}...")
-            video = local_files_utils.ingest_video(file)
-            videos.append(video)
-
-        with db_utils.get_connection() as con:
-            html_files = video_ingestion.save_videos(con, videos)
-        html_files = video_ingestion.to_html_files(videos, output_dir)
-
-        with zipfile.ZipFile(
-            zip_buffer,
-            mode="w",
-            compression=zipfile.ZIP_DEFLATED,
-        ) as archive:
-            for file_path in html_files:
-                archive.write(file_path, arcname=file_path.name)
-
-    zip_buffer.seek(0)
+    with db_utils.get_connection() as con:
+        zip_buffer = video_ingestion.process_submissions(con, files,
+                                                         ingestion_func=local_files_utils.ingest_video)
 
     return StreamingResponse(
         zip_buffer,
