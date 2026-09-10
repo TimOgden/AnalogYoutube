@@ -84,3 +84,18 @@ def _to_html_files(videos: list[Video], output_dir: Path) -> list[Path]:
                                          output_dir / f'{video.title}.html')
         filepaths.append(path)
     return filepaths
+
+
+def get_video(con: Connection, video_id: str) -> Video:
+    cursor = con.cursor()
+    cursor.execute("""SELECT * FROM videos where video_id=?""", (video_id,))
+    result = cursor.fetchone()
+
+    return Video(
+        video_id=result['video_id'],
+        title=result['title'],
+        source=VideoSource(result['source']),
+        thumbnail_path=Path(result['thumbnail_path']),
+        video_url=result['video_url'],
+        author_name=result['author_name'],
+    )

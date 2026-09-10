@@ -13,7 +13,7 @@ from markupsafe import Markup
 import uuid
 
 from src.qr_listener.qr_generator_models import CardData
-from src.video_ingestion import Video
+from src.video_utils import Video
 
 
 SOURCE_CODES = {

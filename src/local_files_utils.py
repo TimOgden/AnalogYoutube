@@ -3,7 +3,7 @@ import uuid
 from PIL import Image
 import cv2
 
-from src.video_ingestion import Video, VideoSource
+from src.video_utils import Video, VideoSource
 from src import thumbnail_utils
 from fastapi import UploadFile
 from pathlib import Path

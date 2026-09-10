@@ -10,7 +10,7 @@ import logging
 from pydantic import BaseModel
 import uvicorn
 
-from src import video_ingestion, youtube_utils, db_utils, local_files_utils
+from src import video_utils, youtube_utils, db_utils, local_files_utils
 
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -72,7 +72,7 @@ async def generate(request: URLGenerateRequest) -> StreamingResponse:
     video_urls = request.urls
 
     with db_utils.get_connection() as con:
-        zip_buffer = video_ingestion.process_submissions(con, video_urls,
+        zip_buffer = video_utils.process_submissions(con, video_urls,
                                                          ingestion_func=youtube_utils.ingest_video)
 
     return StreamingResponse(
@@ -87,7 +87,7 @@ async def generate(request: URLGenerateRequest) -> StreamingResponse:
 @app.post("/generate/files")
 async def generate_files(files: list[UploadFile] = File(...)) -> StreamingResponse:
     with db_utils.get_connection() as con:
-        zip_buffer = video_ingestion.process_submissions(con, files,
+        zip_buffer = video_utils.process_submissions(con, files,
                                                          ingestion_func=local_files_utils.ingest_video)
 
     return StreamingResponse(

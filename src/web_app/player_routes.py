@@ -11,7 +11,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import logging
 
-from src import db_utils, youtube_utils
+from src import db_utils, video_utils, youtube_utils
 from src.consts import VIDEO_ID_PATTERN
 
 logger = logging.getLogger(__name__)
@@ -118,7 +118,7 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
             detail='Invalid Youtube video id'
         )
 
-    session = player_utils.create_watch_session(request.video_id)  # TODO: add inserting new row into `playback_sessions``
+    session = player_utils.create_watch_session(request.video_id)
     with db_utils.get_connection() as cur:
         player_utils.submit_new_session(session, cur)
 
@@ -132,8 +132,7 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
                     'session_id': session.session_id
                 }
             )
-            with db_utils.get_connection() as cur:
-                submit_video_to_db(cur, play_request=request)
+
         except Exception as e:
             logger.error(f'Error sending video id {request.video_id} to websocket {websocket}')
             traceback.print_exc()

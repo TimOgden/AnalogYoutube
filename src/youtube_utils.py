@@ -9,7 +9,7 @@ from src.qr_listener.qr_generator_models import CardData
 import pathlib
 import logging
 
-from src.video_ingestion import Video, VideoSource
+from src.video_utils import Video, VideoSource
 
 
 
@@ -22,34 +22,10 @@ logger = logging.getLogger(__name__)
 
 YOUTUBE_OEMBED_URL = "https://www.youtube.com/oembed"
 
-@dataclass(frozen=True)
-class YoutubeVideo:
-    title: str
-    url: str
-    author_name: str
-    thumbnail: Image
-    video_id: str
-
-
-def get_youtube_video(url: str) -> YoutubeVideo:
-    
-    return YoutubeVideo(
-        url=url,
-        title=data["title"],
-        author_name=data['author_name'],
-        thumbnail=thumbnail,
-        video_id=yt.video_id
-    )
-
-
-def video_from_id(video_id: str) -> YoutubeVideo:
-    url = f'www.youtube.com/watch?v={video_id}'
-    return get_youtube_video(url)
-
 
 def submit_videos_to_db(
     cur: sqlite3.Cursor,
-    videos: list[YoutubeVideo],
+    videos: list[Video],
 ) -> None:
     logger.info("Saving videos to db: %s", videos)
     sql = """
