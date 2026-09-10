@@ -9,7 +9,7 @@ from src.qr_listener.qr_generator_models import CardData
 import pathlib
 import logging
 
-from src.video_utils import Video, VideoSource
+from src.video_models import Video, VideoSource
 
 
 

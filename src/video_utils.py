@@ -8,22 +8,7 @@ from sqlite3 import Connection
 import tempfile
 import zipfile
 from src.qr_listener.qr_generator_utils import populate_qr_code_template
-
-
-class VideoSource(str, Enum):
-    LOCAL = 'local'
-    YOUTUBE = 'youtube'
-    LIBRARY = 'library'
-
-
-@dataclass(frozen=True)
-class Video:
-    video_id: str
-    title: str
-    source: VideoSource
-    thumbnail_path: Path
-    video_url: str | None = field(default=None)
-    author_name: str | None = field(default=None)
+from src.video_models import Video, VideoSource
 
 
 def process_submissions(con: Connection, submissions: list,

@@ -1,19 +1,14 @@
 import io
-import re
 import pathlib
-from fastapi import File
 import qrcode
 import qrcode.image.svg
 import base64
-from src import youtube_utils, db_utils, thumbnail_utils
 from jinja2 import Environment, FileSystemLoader
-from sqlite3 import Connection
 from PIL.Image import Image
 from markupsafe import Markup
-import uuid
 
-from src.qr_listener.qr_generator_models import CardData
-from src.video_utils import Video
+from src.video_models import Video
+
 
 
 SOURCE_CODES = {
