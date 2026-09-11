@@ -9,6 +9,8 @@ from src.consts import VIDEO_ID_PATTERN
 from time import sleep
 import logging
 
+from src.video_models import SOURCE_CODES, VideoSource
+
 logging.basicConfig(
     level=logging.INFO,
     format="[%(levelname)s] %(message)s",
@@ -166,39 +168,41 @@ def activate_tv() -> None:
     logger.info('Successfully activated TV.')
 
 
-def handle_scan(video_id: str) -> None:
-    logger.info("Raw scanner input: %r", video_id)
+def handle_scan(raw_scan: str) -> None:
+    logger.info("Raw scanner input: %r", raw_scan)
 
-    if not video_id:
+    if not raw_scan:
         logger.info("Scanner input is empty; ignoring.")
         return
 
-    if not VIDEO_ID_PATTERN.fullmatch(video_id):
-        logger.info(
-            "Scanner input does not match the video ID pattern; ignoring."
-        )
+    match = VIDEO_ID_PATTERN.fullmatch(raw_scan)
+    if not match:
+        logger.info("Scanner input does not match video id pattern, ignoring.")
         return
 
-    logger.info("Valid video ID scanned: %s", video_id)
+    source_code, video_id = match.groups()
+    source = SOURCE_CODES[source_code]
+
+    logger.info("Valid video ID scanned: %s", raw_scan)
 
     # Skip HDMI-CEC in local development
     if INPUT_DEVICE != 'stdin':
         activate_tv()
-    submit_video(video_id)
+    submit_video(source, video_id)
 
 
-def submit_video(video_id: str) -> None:
+def submit_video(source: VideoSource, video_id: str) -> None:
     logger.info(f'Raw scanner input: {video_id}')
     
     if not video_id:
         return
-    if not VIDEO_ID_PATTERN.fullmatch(video_id):
-        logger.info('Scanner input does not match video id pattern, ignoring.')
-        return
 
     logger.info(f'Submitting video id `{video_id}` to FastAPI endpoint for playback.')
     try:
-        response = requests.post(PLAY_ENDPOINT, json={'video_id': video_id, 'device_id': INPUT_DEVICE}, timeout=5)
+        response = requests.post(PLAY_ENDPOINT, json={'source': source.value,
+                                                      'video_id': video_id, 
+                                                      'device_id': INPUT_DEVICE
+                                                      }, timeout=5)
         if not response.ok:
             logger.error(
                 "Playback request failed: status=%s body=%s",

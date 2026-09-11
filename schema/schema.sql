@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS videos (
 CREATE TABLE IF NOT EXISTS playback_sessions (
     id          TEXT PRIMARY KEY,
     video_id    TEXT NOT NULL,
+    source      TEXT NOT NULL,
 
     created_at  DATETIME NOT NULL,
     started_at  DATETIME,

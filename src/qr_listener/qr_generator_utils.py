@@ -5,18 +5,9 @@ import qrcode
 import qrcode.image.svg
 import base64
 from jinja2 import Environment, FileSystemLoader
-from PIL.Image import Image
 from markupsafe import Markup
 
-from src.video_models import Video
-
-
-
-SOURCE_CODES = {
-    'local': 'LC',
-    'youtube': 'YT',
-    'library': 'LB'
-}
+from src.video_models import SOURCE_CODES, Video
 
 
 def generate_qr_code(data: str, source: str) -> qrcode.image.svg.SvgPathImage:

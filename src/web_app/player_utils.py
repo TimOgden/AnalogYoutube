@@ -28,6 +28,7 @@ class PlayingState(enum.Enum):
 
 @dataclass
 class WatchSession:
+    source: str
     video_id: str
     session_id: str
 
@@ -112,9 +113,9 @@ class WatchSession:
             self.last_update = now
 
 
-def create_watch_session(video_id: str) -> WatchSession:
+def create_watch_session(source: str, video_id: str) -> WatchSession:
     session_id = str(uuid.uuid4())
-    session = WatchSession(video_id=video_id, session_id=session_id)
+    session = WatchSession(source=source, video_id=video_id, session_id=session_id)
 
     for existing_session in active_sessions.values():
         existing_session.end()
@@ -141,7 +142,9 @@ def _reload_active_sessions() -> dict[str, WatchSession]:
         cur.execute("""SELECT * FROM playback_sessions ORDER BY created_at DESC LIMIT 100""")
         rows = cur.fetchmany()
         for row in rows:
-            active_sessions[row['id']] = WatchSession(video_id=row['video_id'], session_id=row['session_id'])
+            active_sessions[row['id']] = WatchSession(source=row['source'], 
+                                                      video_id=row['video_id'], 
+                                                      session_id=row['session_id'])
 
 
 def get_usage_since(cur: Cursor, start_time: datetime.datetime) -> float:
@@ -160,6 +163,7 @@ def get_usage_since_per_video(conn: Connection, start_time: datetime.datetime) -
             v.author_name,
             v.source,
             v.thumbnail_path,
+            ps.session,
             COALESCE(SUM(pu.watched_seconds), 0) AS watched_seconds
         FROM playback_usage pu
         JOIN playback_sessions ps
@@ -176,8 +180,8 @@ def get_usage_since_per_video(conn: Connection, start_time: datetime.datetime) -
 def submit_new_session(session: WatchSession, conn: Connection) -> None:
     now = datetime.datetime.now()
     conn.execute("""INSERT INTO playback_sessions
-                (id, video_id, created_at)
-                VALUES (?, ?, ?)""", (session.session_id, session.video_id, now))
+                (id, source, video_id, created_at)
+                VALUES (?, ?, ?)""", (session.session_id, session.source, session.video_id, now))
 
 
 active_sessions: dict[str, WatchSession] = {}

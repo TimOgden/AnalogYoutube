@@ -1,4 +1,4 @@
 import re
 
 
-VIDEO_ID_PATTERN = re.compile(r'^([A-Za-z0-9_-]{11})$')
+VIDEO_ID_PATTERN = re.compile(r"^(?:YT|LC|LB):([A-Za-z0-9_-]*)$")

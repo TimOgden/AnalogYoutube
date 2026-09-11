@@ -4,6 +4,17 @@ from enum import Enum
 from pathlib import Path
 
 
+SOURCE_CODES = {
+    'local': 'LC',
+    'youtube': 'YT',
+    'library': 'LB',
+    
+    'LC': 'local',
+    'YT': 'youtube',
+    'LB': 'library',
+}
+
+
 class VideoSource(str, Enum):
     LOCAL = 'local'
     YOUTUBE = 'youtube'

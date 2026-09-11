@@ -1,6 +1,7 @@
 import datetime
 import sqlite3
 import traceback
+from typing import Literal
 from src.web_app import player_utils
 from enum import Enum
 
@@ -23,6 +24,7 @@ templates = Jinja2Templates(directory='templates')
 
 
 class PlayRequest(BaseModel):
+    source: Literal['youtube'] | Literal['local'] | Literal['']
     video_id: str
     device_id: str
 
@@ -118,7 +120,7 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
             detail='Invalid Youtube video id'
         )
 
-    session = player_utils.create_watch_session(request.video_id)
+    session = player_utils.create_watch_session(request.source, request.video_id)
     with db_utils.get_connection() as cur:
         player_utils.submit_new_session(session, cur)
 
@@ -128,6 +130,7 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
             logger.info(f'Sending video id {request.video_id} to websocket {websocket}...')
             await broadcast({
                     'type': 'play',
+                    'source': request.source,
                     'video_id': request.video_id,
                     'session_id': session.session_id
                 }
