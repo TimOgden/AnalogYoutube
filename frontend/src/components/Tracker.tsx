@@ -47,12 +47,25 @@ export default function Tracker() {
     }
 
     useEffect(() => {
-        getTrackingData(selectedDuration)
-            .then((response) => {
-                setTrackingData(response.by_video_df);
-                setTotalWatchedMinutes(response.total_watched_minutes);
-            })
-            .catch(console.error);
+        const loadTrackingData = () => {
+            getTrackingData(selectedDuration)
+                .then((response) => {
+                    setTrackingData(response.by_video_df);
+                    setTotalWatchedMinutes(response.total_watched_minutes);
+                })
+                .catch(console.error);
+        };
+
+        // Immediately load on page load / duration change
+        loadTrackingData();
+
+        // Refresh every 5 minutes
+        const interval = setInterval(
+            loadTrackingData,
+            30_000,
+        );
+
+        return () => clearInterval(interval);
     }, [selectedDuration]);
 
     return (
