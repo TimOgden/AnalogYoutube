@@ -181,7 +181,7 @@ def submit_new_session(session: WatchSession, conn: Connection) -> None:
     now = datetime.datetime.now()
     conn.execute("""INSERT INTO playback_sessions
                 (id, source, video_id, created_at)
-                VALUES (?, ?, ?)""", (session.session_id, session.source, session.video_id, now))
+                VALUES (?, ?, ?, ?)""", (session.session_id, session.source, session.video_id, now))
 
 
 active_sessions: dict[str, WatchSession] = {}

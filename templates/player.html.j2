@@ -37,12 +37,19 @@
 </head>
 
 <body>
-
-
-<div id="player"></div>
+    <div id="youtube-player"></div>
+    <video
+        id="local-player"
+        style="display: none; width: 100vw; height: 100vh;"
+        autoplay
+    ></video>
+</body>
 
 <script>
-    let player = null;
+    const localPlayer = document.getElementById("local-player");
+    const youtubeContainer = document.getElementById("youtube-player");
+
+    let youtubePlayer = null;
     let expectedVideoId = null;
     let currentSessionId = null;
     let sequence = 0;
@@ -56,8 +63,8 @@
         scrubStartedAt = Date.now();
 
         // Give a tap an immediate small seek.
-        player.seekTo(
-            player.getCurrentTime() + (direction * 2),
+        youtubePlayer.seekTo(
+            youtubePlayer.getCurrentTime() + (direction * 2),
             true
         );
 
@@ -74,8 +81,8 @@
                 seekAmount = 8;
             }
 
-            player.seekTo(
-                player.getCurrentTime() + (direction * seekAmount),
+            youtubePlayer.seekTo(
+                youtubePlayer.getCurrentTime() + (direction * seekAmount),
                 true
             );
         }, 250);
@@ -100,7 +107,7 @@
         }
 
         const actualVideoId =
-            player.getVideoData()?.video_id ?? null;
+            youtubePlayer.getVideoData()?.video_id ?? null;
 
         const message = {
             type: "player_state",
@@ -113,8 +120,8 @@
 
             state: state,
 
-            current_time: player.getCurrentTime(),
-            duration: player.getDuration()
+            current_time: youtubePlayer.getCurrentTime(),
+            duration: youtubePlayer.getDuration()
         };
         console.log(`Sending message: ${JSON.stringify(message)}...`);
         socket.send(JSON.stringify(message));
@@ -126,7 +133,7 @@
     }
 
     window.onYouTubeIframeAPIReady = function () {
-        player = new YT.Player("player", {
+        youtubePlayer = new YT.Player("youtube-player", {
             width: "100%",
             height: "100%",
 
@@ -154,25 +161,51 @@
         });
     };
 
-    function playVideo(videoId, sessionId) {
-        if (!player || typeof player.loadVideoById !== "function") {
+    function togglePlayer(source) {
+        if(source === 'youtube') {
+            localPlayer.pause();
+            localPlayer.removeAttribute("src");
+            localPlayer.load();
+
+            localPlayer.style.display = "none";
+            youtubeContainer.style.display = "block";
+        } else if(source === 'local') {
+            youtubeContainer.style.display = "none";
+            localPlayer.style.display = "block";
+        }
+    }
+
+    function playYoutubeVideo(videoId, sessionId) {
+        if (!youtubePlayer || typeof youtubePlayer.loadVideoById !== "function") {
             expectedVideoId = videoId;
             return;
         }
 
+        togglePlayer('youtube');
+
         currentSessionId = sessionId;
         sequence = 0;
 
-        player.loadVideoById({
+        youtubePlayer.loadVideoById({
             videoId: videoId
         });
 
-        player.playVideo();
+        youtubePlayer.playVideo();
+    }
+
+    function playLocalVideo(videoId, sessionId) {
+        togglePlayer('local');
+
+        currentSessionId = sessionId;
+        sequence = 0;
+
+        localPlayer.src = `/api/videos/${videoId}`;
+        localPlayer.play();
     }
 
     function handleControl(command) {
         const actualVideoId =
-            player.getVideoData()?.video_id ?? null;
+            youtubePlayer.getVideoData()?.video_id ?? null;
         if (actualVideoId === null) {
             return;
         }
@@ -180,34 +213,34 @@
         console.log(`Received command: ${command}`);
         switch (command) {
             case "play":
-                player.playVideo();
+                youtubePlayer.playVideo();
                 break;
 
             case "pause":
-                player.pauseVideo();
+                youtubePlayer.pauseVideo();
                 break;
 
             case "play_pause":
-                const state = player.getPlayerState();
+                const state = youtubePlayer.getPlayerState();
 
                 if (state === YT.PlayerState.PLAYING) {
-                    player.pauseVideo();
+                    youtubePlayer.pauseVideo();
                 } else {
-                    player.playVideo();
+                    youtubePlayer.playVideo();
                 }
 
                 break;
 
             case "seek_forward":
-                player.seekTo(
-                    player.getCurrentTime() + 10,
+                youtubePlayer.seekTo(
+                    youtubePlayer.getCurrentTime() + 10,
                     true
                 );
                 break;
 
             case "seek_backward":
-                player.seekTo(
-                    Math.max(player.getCurrentTime() - 10, 0),
+                youtubePlayer.seekTo(
+                    Math.max(youtubePlayer.getCurrentTime() - 10, 0),
                     true
                 );
                 break;
@@ -238,7 +271,12 @@
 
             switch (message.type) {
                 case "play":
-                    playVideo(message.video_id, message.session_id);
+                    if(message.source === "youtube") {
+                        playYoutubeVideo(message.video_id, message.session_id);
+                    } else if(message.source === "local") {
+                        playLocalVideo(message.video_id, message.session_id);
+                    }
+                    
                     break;
 
                 case "control":
@@ -262,7 +300,7 @@
     }
 
     function sendPlaybackProgress() {
-        if (!player) {
+        if (!youtubePlayer) {
             return;
         }
 
@@ -270,7 +308,7 @@
             return;
         }
 
-        if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
+        if (youtubePlayer.getPlayerState() !== YT.PlayerState.PLAYING) {
             return;
         }
 
@@ -285,10 +323,10 @@
             sequence: ++sequence,
 
             actual_video_id:
-                player.getVideoData()?.video_id ?? null,
+                youtubePlayer.getVideoData()?.video_id ?? null,
 
-            current_time: player.getCurrentTime(),
-            duration: player.getDuration()
+            current_time: youtubePlayer.getCurrentTime(),
+            duration: youtubePlayer.getDuration()
         };
         console.log(`Sending message ${JSON.stringify(message)}...`);
         socket.send(JSON.stringify(message));

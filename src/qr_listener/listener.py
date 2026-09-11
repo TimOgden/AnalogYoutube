@@ -181,7 +181,7 @@ def handle_scan(raw_scan: str) -> None:
         return
 
     source_code, video_id = match.groups()
-    source = SOURCE_CODES[source_code]
+    source = VideoSource(SOURCE_CODES[source_code])
 
     logger.info("Valid video ID scanned: %s", raw_scan)
 

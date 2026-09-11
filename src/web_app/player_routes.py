@@ -6,14 +6,14 @@ from src.web_app import player_utils
 from enum import Enum
 
 from fastapi import APIRouter, HTTPException, WebSocket
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.requests import Request
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import logging
 
 from src import db_utils, video_utils, youtube_utils
-from src.consts import VIDEO_ID_PATTERN
+from src.consts import MEDIA_PATH, VIDEO_ID_PATTERN
 
 logger = logging.getLogger(__name__)
 
@@ -112,14 +112,21 @@ async def player_websocket(websocket: WebSocket) -> None:
         connected_players.discard(websocket)
 
 
+@router.get('/api/localVideos/{video_id}')
+def get_local_video(video_id: str):
+    path = MEDIA_PATH / 'videos' / f"{video_id}.mp4"
+
+    if not path.exists():
+        raise HTTPException(status_code=404)
+
+    return FileResponse(
+        path,
+        media_type="video/mp4",
+    )
+
+
 @router.post('/api/play')
 async def play_video(request: PlayRequest) -> dict[str, str]:
-    if not VIDEO_ID_PATTERN.fullmatch(request.video_id):
-        raise HTTPException(
-            status_code=400,
-            detail='Invalid Youtube video id'
-        )
-
     session = player_utils.create_watch_session(request.source, request.video_id)
     with db_utils.get_connection() as cur:
         player_utils.submit_new_session(session, cur)

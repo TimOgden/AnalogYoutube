@@ -2,8 +2,7 @@ from PIL.Image import Image
 import os
 import pathlib
 
-
-MEDIA_PATH = pathlib.Path(os.environ['media_path'])
+from src.consts import MEDIA_PATH
 
 
 def save_thumbnail(thumbnail: Image, video_id: str) -> pathlib.Path:

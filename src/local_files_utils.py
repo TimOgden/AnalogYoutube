@@ -6,6 +6,7 @@ import tempfile
 
 from src.video_utils import Video, VideoSource
 from src import thumbnail_utils
+from src.consts import MEDIA_PATH
 from fastapi import UploadFile
 from pathlib import Path
 
@@ -36,11 +37,19 @@ def get_thumbnail(file: UploadFile) -> Image.Image:
     return Image.fromarray(frame_rgb, mode='RGB')
 
 
+def _save_media(file: UploadFile, video_id: str) -> Path:
+    path = MEDIA_PATH / 'videos' / f'{video_id}.mp4'
+    with open(path, 'wb') as f:
+        f.write(file.read())
+    return path
+
+
 def ingest_video(file: UploadFile) -> Video:
     video_id = str(uuid.uuid4())
 
     thumbnail = get_thumbnail(file)
     thumbnail_path = thumbnail_utils.save_thumbnail(thumbnail, video_id)
+    _save_media(file)
 
     return Video(
         video_id=video_id,
