@@ -48,8 +48,10 @@
 <script>
     const localPlayer = document.getElementById("local-player");
     let youtubeContainer = null;
-
     let youtubePlayer = null;
+
+    let source = "youtube";
+
     let expectedVideoId = null;
     let currentSessionId = null;
     let sequence = 0;
@@ -57,16 +59,42 @@
     let scrubInterval = null;
     let scrubStartedAt = null;
 
+    function getCurrentPlayer() {
+        return source === "youtube" ? youtubePlayer : localPlayer;
+    }
+
+    function getCurrentTime() {
+        if(source === "youtube") {
+            return youtubePlayer.getCurrentTime();
+        } else {
+            return localPlayer.currentTime;
+        }
+    }
+
+    function getDuration() {
+        if(source === "youtube") {
+            return youtubePlayer.getDuration();
+        } else {
+            return localPlayer.duration;
+        }
+    }
+
+    function seekTo(player, time) {
+        if(source === "youtube") {
+            player.seekTo(time, true);
+        } else {
+            player.currentTime = time;
+        }
+    }
+
+
     function startScrubbing(direction) {
         stopScrubbing();
 
         scrubStartedAt = Date.now();
 
         // Give a tap an immediate small seek.
-        youtubePlayer.seekTo(
-            youtubePlayer.getCurrentTime() + (direction * 2),
-            true
-        );
+        seekTo(getCurrentPlayer(), getCurrentTime() + (direction * 2));
 
         scrubInterval = setInterval(() => {
             const heldForSeconds = (Date.now() - scrubStartedAt) / 1000;
@@ -81,10 +109,7 @@
                 seekAmount = 8;
             }
 
-            youtubePlayer.seekTo(
-                youtubePlayer.getCurrentTime() + (direction * seekAmount),
-                true
-            );
+            seekTo(getCurrentPlayer(), getCurrentTime() + (direction * seekAmount));
         }, 250);
     }
 
@@ -97,6 +122,15 @@
         scrubStartedAt = null;
     }
 
+    function getActualVideoId() {
+        if (source === "youtube") {
+            return youtubePlayer.getVideoData()?.video_id ?? null;
+        } else {
+            const src = localPlayer.getAttribute("src")
+            return src.split('/').pop();
+        }
+    }
+
     function sendPlayerState(state) {
         if (!socket || socket.readyState !== WebSocket.OPEN) {
             return;
@@ -106,8 +140,7 @@
             return;
         }
 
-        const actualVideoId =
-            youtubePlayer.getVideoData()?.video_id ?? null;
+        const actualVideoId = getActualVideoId();
 
         const message = {
             type: "player_state",
@@ -120,8 +153,8 @@
 
             state: state,
 
-            current_time: youtubePlayer.getCurrentTime(),
-            duration: youtubePlayer.getDuration()
+            current_time: getCurrentTime(),
+            duration: getDuration()
         };
         console.log(`Sending message: ${JSON.stringify(message)}...`);
         socket.send(JSON.stringify(message));
@@ -147,12 +180,6 @@
             },
 
             events: {
-                onReady: function () {
-                    if (expectedVideoId) {
-                        playVideo(expectedVideoId);
-                    }
-                },
-
                 onAutoplayBlocked: function () {
                     console.error("YouTube autoplay was blocked.");
                 },
@@ -163,15 +190,17 @@
         youtubeContainer = document.getElementById("youtube-player");
     };
 
-    function togglePlayer(source) {
-        if(source === 'youtube') {
+    function togglePlayer(new_source) {
+        source = new_source;
+        if(new_source === 'youtube') {
             localPlayer.pause();
             localPlayer.removeAttribute("src");
             localPlayer.load();
 
             localPlayer.style.display = "none";
             youtubeContainer.style.display = "block";
-        } else if(source === 'local') {
+        } else {
+            youtubePlayer.pauseVideo();
             youtubeContainer.style.display = "none";
             localPlayer.style.display = "block";
         }
@@ -214,9 +243,42 @@
         localPlayer.play();
     }
 
+    function playVideo() {
+        if(source === "youtube") {
+            youtubePlayer.playVideo();
+        } else {
+            localPlayer.play();
+        }
+    }
+
+    function pauseVideo() {
+        if(source === "youtube") {
+            youtubePlayer.pauseVideo();
+        } else {
+            localPlayer.pause();
+        }
+    }
+
+    function handlePlayPause() {
+        if(source === "youtube") {
+            const state = youtubePlayer.getPlayerState();
+            if (state === YT.PlayerState.PLAYING) {
+                youtubePlayer.pauseVideo();
+            } else {
+                youtubePlayer.playVideo();
+            }
+        } else {
+            const isPaused = localPlayer.paused;
+            if (!isPaused) {
+                localPlayer.pause();
+            } else {
+                localPlayer.play();
+            }
+        }
+    }
+
     function handleControl(command) {
-        const actualVideoId =
-            youtubePlayer.getVideoData()?.video_id ?? null;
+        const actualVideoId = getActualVideoId();
         if (actualVideoId === null) {
             return;
         }
@@ -224,36 +286,23 @@
         console.log(`Received command: ${command}`);
         switch (command) {
             case "play":
-                youtubePlayer.playVideo();
+                playVideo();
                 break;
 
             case "pause":
-                youtubePlayer.pauseVideo();
+                pauseVideo();
                 break;
 
             case "play_pause":
-                const state = youtubePlayer.getPlayerState();
-
-                if (state === YT.PlayerState.PLAYING) {
-                    youtubePlayer.pauseVideo();
-                } else {
-                    youtubePlayer.playVideo();
-                }
-
+                handlePlayPause();
                 break;
 
             case "seek_forward":
-                youtubePlayer.seekTo(
-                    youtubePlayer.getCurrentTime() + 10,
-                    true
-                );
+                seekTo(getCurrentPlayer(), getCurrentTime() + 10);
                 break;
 
             case "seek_backward":
-                youtubePlayer.seekTo(
-                    Math.max(youtubePlayer.getCurrentTime() - 10, 0),
-                    true
-                );
+                seekTo(getCurrentPlayer(), Math.max(getCurrentTime() - 10, 0));
                 break;
             case "scrub_forward_start":
                 startScrubbing(5);
@@ -311,20 +360,29 @@
     }
 
     function sendPlaybackProgress() {
-        if (!youtubePlayer) {
-            return;
-        }
-
         if (!currentSessionId) {
-            return;
-        }
-
-        if (youtubePlayer.getPlayerState() !== YT.PlayerState.PLAYING) {
             return;
         }
 
         if (!socket || socket.readyState !== WebSocket.OPEN) {
             return;
+        }
+
+        if (source === "youtube") {
+            if (!youtubePlayer) {
+                return;
+            }
+
+            if (youtubePlayer.getPlayerState() !== YT.PlayerState.PLAYING) {
+                return;
+            }
+        } else {
+            if(!localPlayer) {
+                return;
+            }
+            if (localPlayer.paused) {
+                return;
+            }
         }
 
         const message = {
@@ -333,11 +391,10 @@
             session_id: currentSessionId,
             sequence: ++sequence,
 
-            actual_video_id:
-                youtubePlayer.getVideoData()?.video_id ?? null,
+            actual_video_id: getActualVideoId(),
 
-            current_time: youtubePlayer.getCurrentTime(),
-            duration: youtubePlayer.getDuration()
+            current_time: getCurrentTime(),
+            duration: getDuration()
         };
         console.log(`Sending message ${JSON.stringify(message)}...`);
         socket.send(JSON.stringify(message));
