@@ -84,7 +84,7 @@ async def generate(request: URLGenerateRequest) -> StreamingResponse:
         },
     )
 
-@app.post("/generate/files")
+@app.post("/api/generate/files")
 async def generate_files(files: list[UploadFile] = File(...)) -> StreamingResponse:
     with db_utils.get_connection() as con:
         zip_buffer = video_utils.process_submissions(con, files,

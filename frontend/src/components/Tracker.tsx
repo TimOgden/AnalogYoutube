@@ -141,7 +141,7 @@ export default function Tracker() {
                                         }}
                                     >
                                         <TableCell>
-                                            <Typography fontWeight={500}>
+                                            <Typography>
                                                 {row.title}
                                             </Typography>
                                         </TableCell>

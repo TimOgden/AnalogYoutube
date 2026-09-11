@@ -17,7 +17,7 @@ export async function submitUrls(urls: string[], source: string) {
     return response.blob();
 }
 
-export async function submitFiles(files: FileList) {
+export async function submitFiles(files: File[]) {
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
         formData.append("files", files[i]);

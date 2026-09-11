@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
-export default function FileUpload(setFiles: (files: FileList | null) => void) {
+interface FileUploadProps {
+    onFilesSelected: (files: File[]) => void;
+} 
+
+export default function FileUpload({
+    onFilesSelected
+    } : FileUploadProps) {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFiles(e.target.files);
-        console.log(e.target.files);
+         if (!e.target.files) {
+            return;
+        }
+
+        onFilesSelected(Array.from(e.target.files));
+
+        // Allows selecting the same file again later if it was removed.
+        e.target.value = "";
     };
 
     return (

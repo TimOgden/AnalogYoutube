@@ -45,7 +45,7 @@ def _save_videos(con: Connection, videos: list[Video]) -> None:
         source,
         thumbnail_path,
         video_url,
-        author_name,
+        author_name
     ) VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(video_id) DO UPDATE SET
         title = excluded.title,
@@ -58,7 +58,7 @@ def _save_videos(con: Connection, videos: list[Video]) -> None:
     param_list = []
     for video in videos:
         param_list.append((video.video_id, video.title, video.source.value,
-                           video.thumbnail_path, video.video_url, video.author_name))
+                           str(video.thumbnail_path), video.video_url, video.author_name))
     con.executemany(sql, param_list)
 
 
@@ -66,7 +66,7 @@ def _to_html_files(videos: list[Video], output_dir: Path) -> list[Path]:
     filepaths = []
     for video in videos:
         path = populate_qr_code_template(video, 
-                                         output_dir / f'{video.title}.html')
+                                         output_dir / f'{video.title.replace('/', '_')}.html')
         filepaths.append(path)
     return filepaths
 

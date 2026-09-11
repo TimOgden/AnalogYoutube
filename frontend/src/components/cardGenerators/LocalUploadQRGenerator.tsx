@@ -4,31 +4,21 @@ import { useState, type FormEvent } from "react";
 import { submitFiles } from "../../api/qrGeneration";
 
 export default function LocalUploadQRGenerator() {
-    const [files, setFiles] = useState<FileList | null>(null);
+    const [files, setFiles] = useState<File[]>([]);
 
-    function addFiles(newFiles: FileList | File[]) {
-        setFiles((currentFiles) => {
-            const mergedFiles = [
-                ...(currentFiles ? Array.from(currentFiles) : []),
-                ...Array.from(newFiles),
-            ];
-
-            const dataTransfer = new DataTransfer();
-            mergedFiles.forEach((file) => dataTransfer.items.add(file));
-            return dataTransfer.files;
-        });
+    function addFiles(newFiles: File[]) {
+        setFiles((currentFiles) => [
+            ...currentFiles,
+            ...newFiles,
+        ]);
     }
 
     function removeFile(fileToRemove: File) {
-        if (!files || files.length === 0) return;
-
-        const remainingFiles = Array.from(files).filter(
-            (file) => file !== fileToRemove,
+        setFiles((currentFiles) =>
+            currentFiles.filter(
+                (file) => file !== fileToRemove,
+            ),
         );
-
-        const dataTransfer = new DataTransfer();
-        remainingFiles.forEach((file) => dataTransfer.items.add(file));
-        setFiles(dataTransfer.files);
     }
 
     async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -61,20 +51,12 @@ export default function LocalUploadQRGenerator() {
             </p>
 
             <form onSubmit={handleSubmit} className={styles.form}>
-                {FileUpload((files) => addFiles(files ?? []))}
+                <FileUpload onFilesSelected={addFiles}/>
                 {files && files.length > 0 && (
                     <div>
                         {Array.from(files).map((file) => (
                             <div key={`${file.name}-${file.lastModified}`}>
                                 <span>{file.name}</span>
-                                <input
-                                    type="text"
-                                    placeholder="Enter a title for this file..."
-                                    onChange={(e) => {
-                                        const title = e.target.value;
-                                        
-                                    }}
-                                />
                                 <button
                                     type="button"
                                     aria-label={`Remove ${file.name}`}

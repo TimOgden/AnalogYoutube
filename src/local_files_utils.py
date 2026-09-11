@@ -2,6 +2,7 @@ import io
 import uuid
 from PIL import Image
 import cv2
+import tempfile
 
 from src.video_utils import Video, VideoSource
 from src import thumbnail_utils
@@ -9,31 +10,36 @@ from fastapi import UploadFile
 from pathlib import Path
 
 
-def _title_from_filename(filename: Path) -> str:
+def _title_from_filename(filename: Path | str) -> str:
+    if isinstance(filename, str):
+        filename = Path(filename)
+    
     while filename.suffix:
         filename = filename.with_suffix('')
     return filename.name
 
 
-def get_thumbnail(bytes_content: bytes) -> Image.Image:
-    video_stream = io.BytesIO(bytes_content)
-    frame_capture = cv2.VideoCapture(video_stream)
+def get_thumbnail(file: UploadFile) -> Image.Image:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        local_path = Path(temp_dir) / file.filename
+        with open(local_path, 'wb') as f:
+            f.write(file.file.read())
 
-    if not frame_capture.isOpened():
-        raise ValueError("Error opening video stream.")
+        frame_capture = cv2.VideoCapture(local_path)
 
-    ret, frame = frame_capture.read() 
-    frame_capture.release()
+        ret, frame = frame_capture.read() 
+        frame_capture.release()
 
     if not ret:
         raise ValueError("Error getting frame.")
-    return Image.fromarray(frame, mode='RGB')
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    return Image.fromarray(frame_rgb, mode='RGB')
 
 
 def ingest_video(file: UploadFile) -> Video:
-    video_id = uuid.uuid4()
+    video_id = str(uuid.uuid4())
 
-    thumbnail = get_thumbnail(file.file.read())
+    thumbnail = get_thumbnail(file)
     thumbnail_path = thumbnail_utils.save_thumbnail(thumbnail, video_id)
 
     return Video(

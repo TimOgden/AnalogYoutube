@@ -1,4 +1,5 @@
 import io
+import mimetypes
 import pathlib
 import qrcode
 import qrcode.image.svg
@@ -18,7 +19,7 @@ SOURCE_CODES = {
 }
 
 
-def generate_qr_code(data: str, source: str) -> Image:
+def generate_qr_code(data: str, source: str) -> qrcode.image.svg.SvgPathImage:
     if source not in SOURCE_CODES:
         raise ValueError(f'Unknown source: {source}, \
                          must be one of {list(SOURCE_CODES.keys())}')
@@ -30,12 +31,23 @@ def generate_qr_code(data: str, source: str) -> Image:
     return image
 
 
-def image_to_data_uri(image) -> str:
+def file_to_data_uri(path: pathlib.Path) -> str:
+    mime_type, _ = mimetypes.guess_type(path)
+
+    if mime_type is None:
+        mime_type = "application/octet-stream"
+
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+
+    return f"data:{mime_type};base64,{encoded}"
+
+
+def image_to_data_uri(image: qrcode.image.svg.SvgPathImage) -> str:
     buffer = io.BytesIO()
-    image.save(buffer, format="JPEG")
+    image.save(buffer)
 
     encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
-    return f"data:image/jpeg;base64,{encoded}"
+    return f"data:image/svg+xml;base64,{encoded}"
 
 
 def svg_to_markup(qr_svg) -> Markup:
@@ -48,7 +60,7 @@ def svg_to_markup(qr_svg) -> Markup:
 def populate_qr_code_template(video: Video, output_path: pathlib.Path) -> pathlib.Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    qr_code_url = generate_qr_code(video.video_id, video.source.value)
+    qr_code = generate_qr_code(video.video_id, video.source.value)
 
     env = Environment(
         loader=FileSystemLoader("templates"),
@@ -57,8 +69,8 @@ def populate_qr_code_template(video: Video, output_path: pathlib.Path) -> pathli
     template = env.get_template('video_qr.html.j2')
     html = template.render(
         title=video.title,
-        thumbnail=video.thumbnail_path,
-        svg_url=qr_code_url,
+        thumbnail=file_to_data_uri(video.thumbnail_path),
+        svg_url=image_to_data_uri(qr_code),
     )
 
     with open(output_path, 'w') as f:

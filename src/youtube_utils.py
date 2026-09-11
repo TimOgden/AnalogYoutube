@@ -4,7 +4,7 @@ import requests
 from dataclasses import dataclass
 from pytubefix import YouTube
 from src import thumbnail_utils
-from PIL.Image import Image
+from PIL import Image
 from src.qr_listener.qr_generator_models import CardData
 import pathlib
 import logging

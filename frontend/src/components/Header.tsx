@@ -6,7 +6,6 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import Button from '@mui/material/Button';
 import AdbIcon from '@mui/icons-material/Adb';
-import Divider from '@mui/material/Divider';
 
 interface PageProps {
     tabId: number;
