@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 MAX_HEARTBEAT_DELTA = 10
 SAVE_INTERVAL = 30
 
-active_sessions = {}
+active_sessions: dict[str, WatchSession] = {}
 
 class PlayingState(enum.Enum):
     INVALID = -1
@@ -127,25 +127,30 @@ def create_watch_session(source: str, video_id: str) -> WatchSession:
 
 
 def get_session(session_id: str) -> WatchSession:
-    try:
-        return active_sessions[session_id]
-    except KeyError:
-        active_sessions = _reload_active_sessions()
-        return active_sessions[session_id]
+    session = active_sessions.get(session_id)
+
+    if session is None:
+        active_sessions.update(_reload_active_sessions())
+        session = active_sessions.get(session_id)
+
+    if session is None:
+        raise KeyError(f"Unknown playback session: {session_id}")
+
+    return session
 
 
 def _reload_active_sessions() -> dict[str, WatchSession]:
     logger.info('Reloading sessions from db...')
-    active_sessions = {}
-
+    sessions = {}
     with db_utils.get_connection() as conn:
         cur = conn.cursor()
         cur.execute("""SELECT * FROM playback_sessions ORDER BY created_at DESC LIMIT 100""")
-        rows = cur.fetchmany()
+        rows = cur.fetchall()
         for row in rows:
-            active_sessions[row['id']] = WatchSession(source=row['source'], 
-                                                      video_id=row['video_id'], 
-                                                      session_id=row['session_id'])
+            sessions[row['id']] = WatchSession(source=row['source'], 
+                                               video_id=row['video_id'], 
+                                               session_id=row['id'])
+    return sessions
 
 
 def get_usage_since(cur: Cursor, start_time: datetime.datetime) -> float:
@@ -164,7 +169,7 @@ def get_usage_since_per_video(conn: Connection, start_time: datetime.datetime) -
             v.author_name,
             v.source,
             v.thumbnail_path,
-            ps.session,
+            ps.id as session_id,
             COALESCE(SUM(pu.watched_seconds), 0) AS watched_seconds
         FROM playback_usage pu
         JOIN playback_sessions ps
@@ -183,6 +188,3 @@ def submit_new_session(session: WatchSession, conn: Connection) -> None:
     conn.execute("""INSERT INTO playback_sessions
                 (id, source, video_id, created_at)
                 VALUES (?, ?, ?, ?)""", (session.session_id, session.source, session.video_id, now))
-
-
-active_sessions: dict[str, WatchSession] = {}
