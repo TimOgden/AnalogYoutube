@@ -105,7 +105,7 @@ from src.web_app.tracking_routes import router as tracking_router
 app.include_router(player_router)
 app.include_router(tracking_router)
 
-# chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --disable-session-crached-bubble --autoplay-policy=no-user-gesture-required http://127.0.0.1:8000/player
+# chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --disable-session-crached-bubble --autoplay-policy=no-user-gesture-required http://127.0.0.1:1234/player
 
 
 def main() -> None:

@@ -16,6 +16,7 @@ import { getTrackingData } from "../api/tracking";
 type TrackingRow = {
     title: string;
     author_name: string;
+    source: string;
     watched_minutes: number;
 };
 
@@ -112,6 +113,10 @@ export default function Tracker() {
                                     Author
                                 </TableCell>
 
+                                <TableCell sx={{ fontWeight: 700 }}>
+                                    Source
+                                </TableCell>
+
                                 <TableCell
                                     align="right"
                                     sx={{ fontWeight: 700 }}
@@ -131,6 +136,9 @@ export default function Tracker() {
                                             borderBottom: 0,
                                         },
                                     }}>
+                                    <TableCell>
+                                        <Typography>--</Typography>
+                                    </TableCell>
                                     <TableCell>
                                         <Typography>--</Typography>
                                     </TableCell>
@@ -158,7 +166,15 @@ export default function Tracker() {
                                     </TableCell>
 
                                     <TableCell>
-                                        {row.author_name}
+                                        <Typography>
+                                            {row.author_name}
+                                        </Typography>
+                                    </TableCell>
+
+                                    <TableCell>
+                                        <Typography>
+                                            {row.source}
+                                        </Typography>
                                     </TableCell>
 
                                     <TableCell align="right">

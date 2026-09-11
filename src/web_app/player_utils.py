@@ -159,7 +159,7 @@ def get_usage_since_per_video(conn: Connection, start_time: datetime.datetime) -
             v.title,
             v.author_name,
             v.source,
-            v.thumnail_path,
+            v.thumbnail_path,
             COALESCE(SUM(pu.watched_seconds), 0) AS watched_seconds
         FROM playback_usage pu
         JOIN playback_sessions ps

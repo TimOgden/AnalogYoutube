@@ -1,6 +1,7 @@
 export type TrackingRow = {
     title: string;
     author_name: string;
+    source: string;
     watched_minutes: number;
 };
 
