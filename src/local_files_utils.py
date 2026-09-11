@@ -1,4 +1,6 @@
 import io
+import shutil
+import subprocess
 import uuid
 from PIL import Image
 import cv2
@@ -37,10 +39,78 @@ def get_thumbnail(file: UploadFile) -> Image.Image:
     return Image.fromarray(frame_rgb, mode='RGB')
 
 
+def _convert_to_mp4(file: UploadFile, output_path: Path) -> None:
+    suffix = Path(file.filename or "").suffix or ".bin"
+
+    with tempfile.NamedTemporaryFile(
+        suffix=suffix,
+        delete=False,
+    ) as input_file:
+        input_path = Path(input_file.name)
+
+        file.file.seek(0)
+        shutil.copyfileobj(file.file, input_file)
+
+    try:
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-i",
+                str(input_path),
+
+                # Video
+                "-c:v",
+                "libx264",
+                "-preset",
+                "fast",
+                "-crf",
+                "22",
+
+                # Audio
+                "-c:a",
+                "aac",
+                "-b:a",
+                "128k",
+
+                # Better for browser streaming
+                "-movflags",
+                "+faststart",
+
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(
+            f"ffmpeg conversion failed:\n{exc.stderr}"
+        ) from exc
+
+    finally:
+        input_path.unlink(missing_ok=True)
+
+
 def _save_media(file: UploadFile, video_id: str) -> Path:
-    path = MEDIA_PATH / 'videos' / f'{video_id}.mp4'
-    with open(path, 'wb') as f:
-        f.write(file.read())
+    path = MEDIA_PATH / "videos" / f"{video_id}.mp4"
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    suffix = Path(file.filename or "").suffix.lower()
+
+    if suffix == ".mp4":
+        file.file.seek(0)
+
+        with open(path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+
+    else:
+        _convert_to_mp4(
+            file=file,
+            output_path=path,
+        )
+
     return path
 
 
@@ -49,7 +119,7 @@ def ingest_video(file: UploadFile) -> Video:
 
     thumbnail = get_thumbnail(file)
     thumbnail_path = thumbnail_utils.save_thumbnail(thumbnail, video_id)
-    _save_media(file)
+    _save_media(file, video_id)
 
     return Video(
         video_id=video_id,

@@ -84,7 +84,7 @@ def stdin_scans() -> Iterator[str]:
     """Yield manually entered scans for local development."""
 
     logger.info("Mock scanner enabled.")
-    logger.info("Enter a YouTube video ID and press Enter.")
+    logger.info("Enter a video ID and press Enter.")
 
     while True:
         try:

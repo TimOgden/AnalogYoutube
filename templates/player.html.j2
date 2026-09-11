@@ -47,7 +47,7 @@
 
 <script>
     const localPlayer = document.getElementById("local-player");
-    const youtubeContainer = document.getElementById("youtube-player");
+    let youtubeContainer = null;
 
     let youtubePlayer = null;
     let expectedVideoId = null;
@@ -159,6 +159,8 @@
                 onStateChange: onPlayerStateChanged
             }
         });
+
+        youtubeContainer = document.getElementById("youtube-player");
     };
 
     function togglePlayer(source) {
@@ -199,7 +201,16 @@
         currentSessionId = sessionId;
         sequence = 0;
 
-        localPlayer.src = `/api/videos/${videoId}`;
+        localPlayer.pause();
+
+        localPlayer.removeAttribute("src");
+        localPlayer.load();
+
+        localPlayer.currentTime = 0;
+
+        localPlayer.src = `/api/localVideos/${videoId}`;
+        localPlayer.load();
+
         localPlayer.play();
     }
 
