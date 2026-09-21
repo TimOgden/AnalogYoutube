@@ -1,6 +1,9 @@
 sources:
   archive.org:
     identifiers:
-      - popeye-collection
-      - ThePinkPanther-cartoons
-      - LoneRangerCartoon1966CrackOfDoom
+      popeye-collection:
+        displayName: Popeye the Sailor (1933)
+      ThePinkPanther-cartoons:
+        displayName: The Pink Panther (1964)
+      LoneRangerCartoon1966CrackOfDoom:
+        displayName: The Lone Ranger (1966)

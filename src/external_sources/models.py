@@ -26,4 +26,11 @@ class DownloadableVideo:
     external_url: str | None = None
 
 
-LIBRARY = dict[str, dict[str, list[DownloadableVideo]]]
+@dataclass(frozen=True)
+class Playlist:
+    id: str
+    display_name: str | None
+    videos: list[DownloadableVideo]
+
+
+LIBRARY = dict[str, dict[str, Playlist]]

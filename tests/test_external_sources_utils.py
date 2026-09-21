@@ -2,7 +2,12 @@ from src.external_sources.external_sources_utils import _populate_library
 
 
 def test_populate_library():
-    identifiers = ['popeye-pubdomain', 'ThePinkPanther-cartoons']
+    identifiers = {
+        'popeye-collection':
+            {'displayName': 'Popeye the Sailor (1933)'},
+        'ThePinkPanther-cartoons':
+            {'displayName': 'The Pink Panther (1964)'},
+    }
     config = {
         'sources': {
             'archive.org': {
@@ -13,6 +18,6 @@ def test_populate_library():
 
     library = _populate_library(config)
     assert 'archive.org' in library
-    assert identifiers[0] in library['archive.org']
-    assert library['archive.org'][identifiers[0]][0].source == 'archive.org'
+    assert 'popeye-collection' in library['archive.org']
+    assert library['archive.org']['popeye-collection'].display_name == 'Popeye the Sailor (1933)'
 
