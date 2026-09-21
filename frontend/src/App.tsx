@@ -2,6 +2,7 @@ import React from "react"
 import QRGenerators from "./components/QRGenerators"
 import Tracker from "./components/Tracker"
 import Header from "./components/Header"
+import Library from "./components/Library"
 
 const pages = [
   {tabId: 0, label: 'Card Generator', component: <QRGenerators />},

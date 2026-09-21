@@ -6,7 +6,7 @@ from src.external_sources.models import LIBRARY
 router = APIRouter()
 
 
-@router.get('/library')
+@router.get('/api/library')
 def get_library() -> LIBRARY:
     library = get_curated_library()
     return library

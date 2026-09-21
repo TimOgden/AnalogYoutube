@@ -23,6 +23,7 @@ class DownloadableVideo:
     source: str
     download_url: str
     thumbnail_url: str | None = None
+    external_url: str | None = None
 
 
 LIBRARY = dict[str, dict[str, list[DownloadableVideo]]]

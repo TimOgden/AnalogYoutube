@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
     Box,
     Chip,
+    Fab,
     Paper,
     Table,
     TableBody,
@@ -11,6 +12,10 @@ import {
     TableRow,
     Typography,
 } from "@mui/material";
+import Checkbox from "@mui/material/Checkbox";
+import IconButton from "@mui/material/IconButton";
+import SendIcon from "@mui/icons-material/Send";
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { getLibrary } from "../api/library";
 
 
@@ -18,6 +23,7 @@ type LibraryVideo = {
     id: string;
     title: string;
     source: string;
+    external_url: string;
 };
 
 type LibraryData = Record<
@@ -28,6 +34,26 @@ type LibraryData = Record<
 
 export default function Library() {
     const [library, setLibrary] = useState<LibraryData | null>(null);
+    const [selectedVideos, setSelectedVideos] = useState<Set<string>>(
+        new Set()
+    );
+
+    const getVideoKey = (source: string, collection: string, videoId: string) =>
+        `${source}-${collection}-${videoId}`;
+
+    const toggleVideo = (videoKey: string) => {
+        setSelectedVideos((currentSelection) => {
+            const nextSelection = new Set(currentSelection);
+
+            if (nextSelection.has(videoKey)) {
+                nextSelection.delete(videoKey);
+            } else {
+                nextSelection.add(videoKey);
+            }
+
+            return nextSelection;
+        });
+    };
 
     useEffect(() => {
         const loadLibrary = () => {
@@ -123,12 +149,15 @@ export default function Library() {
                                             component={Paper}
                                             sx={{
                                                 borderRadius: 2,
-                                                overflow: "hidden",
+                                                overflowX: "hidden",
+                                                maxHeight: 400,
+                                                overflowY: "auto",
                                             }}
                                         >
                                             <Table>
                                                 <TableHead>
                                                     <TableRow>
+                                                        <TableCell padding="checkbox" />
                                                         <TableCell
                                                             sx={{
                                                                 fontWeight: 700,
@@ -136,29 +165,52 @@ export default function Library() {
                                                         >
                                                             Video
                                                         </TableCell>
-
                                                         <TableCell
                                                             sx={{
                                                                 fontWeight: 700,
                                                             }}
                                                         >
-                                                            Source
+                                                            Link
                                                         </TableCell>
                                                     </TableRow>
                                                 </TableHead>
 
                                                 <TableBody>
-                                                    {videos.map((video) => (
+                                                    {videos.map((video) => {
+                                                        const videoKey = getVideoKey(
+                                                            source,
+                                                            collection,
+                                                            video.id
+                                                        );
+                                                        const isSelected = selectedVideos.has(
+                                                            videoKey
+                                                        );
+
+                                                        return (
                                                         <TableRow
                                                             key={video.id}
                                                             hover
+                                                            selected={isSelected}
+                                                            onClick={() => toggleVideo(videoKey)}
                                                             sx={{
-                                                                "&:last-child td":
-                                                                    {
-                                                                        borderBottom: 0,
-                                                                    },
+                                                                cursor: "pointer",
+                                                                "&:last-child td": {
+                                                                    borderBottom: 0,
+                                                                },
                                                             }}
                                                         >
+                                                            <TableCell padding="checkbox">
+                                                                <Checkbox
+                                                                    checked={isSelected}
+                                                                    onChange={() => toggleVideo(videoKey)}
+                                                                    onClick={(event) => event.stopPropagation()}
+                                                                    slotProps={{
+                                                                        input: {
+                                                                            "aria-label": `Select ${video.title}`,
+                                                                        },
+                                                                    }}
+                                                                />
+                                                            </TableCell>
                                                             <TableCell>
                                                                 <Typography>
                                                                     {
@@ -166,16 +218,22 @@ export default function Library() {
                                                                     }
                                                                 </Typography>
                                                             </TableCell>
-
                                                             <TableCell>
-                                                                <Typography>
-                                                                    {
-                                                                        video.source
-                                                                    }
-                                                                </Typography>
+                                                                <IconButton
+                                                                    component="a"
+                                                                    href={video.external_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    aria-label={`Open ${video.title} in new tab`}
+                                                                    size="small"
+                                                                    onClick={(event) => event.stopPropagation()}
+                                                                >
+                                                                    <OpenInNewIcon fontSize="small" />
+                                                                </IconButton>
                                                             </TableCell>
                                                         </TableRow>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </TableBody>
                                             </Table>
                                         </TableContainer>
@@ -185,6 +243,23 @@ export default function Library() {
                         </Box>
                     )
                 )
+            )}
+
+            {selectedVideos.size > 0 && (
+                <Fab
+                    variant="extended"
+                    color="primary"
+                    sx={{
+                        position: "fixed",
+                        right: 24,
+                        bottom: 24,
+                        zIndex: 1100,
+                    }}
+                    aria-label={`Submit ${selectedVideos.size} selected videos`}
+                >
+                    <SendIcon sx={{ mr: 1 }} />
+                    Submit ({selectedVideos.size})
+                </Fab>
             )}
         </Box>
     );
