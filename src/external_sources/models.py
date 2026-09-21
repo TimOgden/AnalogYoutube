@@ -21,7 +21,8 @@ class DownloadableVideo:
     id: str
     title: str
     source: str
-    download_url: str
+    playlist_id: str | None
+    download_url: str | None
     thumbnail_url: str | None = None
     external_url: str | None = None
 

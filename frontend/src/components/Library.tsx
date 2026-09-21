@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     Box,
     Chip,
@@ -18,19 +18,27 @@ import IconButton from "@mui/material/IconButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SendIcon from "@mui/icons-material/Send";
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { getLibrary } from "../api/library";
+import { getLibrary, submitSelections } from "../api/library";
 
+
+type Playlist = {
+    id: string;
+    display_name: string | null;
+    videos: LibraryVideo[];
+}
 
 type LibraryVideo = {
     id: string;
     title: string;
     source: string;
-    external_url: string;
+    download_url: string | null;
+    thumbnail_url?: string | null;
+    external_url?: string | null;
 };
 
 type LibraryData = Record<
     string,
-    Record<string, LibraryVideo[]>
+    Record<string, Playlist>
 >;
 
 type LastSelectedVideo = {
@@ -147,6 +155,34 @@ export default function Library() {
         });
     };
 
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!library) {
+            return;
+        }
+
+        const videos = Object.entries(library).flatMap(
+            ([source, collections]) =>
+                Object.entries(collections).flatMap(([collection, playlist]) =>
+                    playlist.videos.filter((video) =>
+                        selectedVideos.has(getVideoKey(source, collection, video.id))
+                    ).map((video) => ({
+                        ...video,
+                        playlist_id: playlist.id,
+                    }))
+                )
+        );
+
+        const blob = await submitSelections(videos);
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = "archive_org-cards.zip";
+        a.click();
+
+        URL.revokeObjectURL(downloadUrl);
+    };
+
     useEffect(() => {
         const loadLibrary = () => {
             getLibrary()
@@ -206,15 +242,15 @@ export default function Library() {
                             </Typography>
 
                             {Object.entries(collections).map(
-                                ([collection, videos]) => {
-                                    const selectedCount = videos.filter((video) =>
+                                ([collection, playlist]) => {
+                                    const selectedCount = playlist.videos.filter((video) =>
                                         selectedVideos.has(
                                             getVideoKey(source, collection, video.id)
                                         )
                                     ).length;
                                     const allSelected =
-                                        videos.length > 0 &&
-                                        selectedCount === videos.length;
+                                        playlist.videos.length > 0 &&
+                                        selectedCount === playlist.videos.length;
                                     const collectionKey = `${source}-${collection}`;
                                     const isCollapsed = collapsedCollections.has(
                                         collectionKey
@@ -238,12 +274,12 @@ export default function Library() {
                                                 indeterminate={
                                                     selectedCount > 0 && !allSelected
                                                 }
-                                                disabled={videos.length === 0}
+                                                disabled={playlist.videos.length === 0}
                                                 onChange={() =>
                                                     toggleCollection(
                                                         source,
                                                         collection,
-                                                        videos
+                                                        playlist.videos
                                                     )
                                                 }
                                                 slotProps={{
@@ -273,12 +309,12 @@ export default function Library() {
                                                 variant="h6"
                                                 sx={{ fontWeight: 600 }}
                                             >
-                                                {collection}
+                                                {playlist.display_name}
                                             </Typography>
 
                                             <Chip
-                                                label={`${videos.length} ${
-                                                    videos.length === 1
+                                                label={`${playlist.videos.length} ${
+                                                    playlist.videos.length === 1
                                                         ? "video"
                                                         : "videos"
                                                 }`}
@@ -319,7 +355,7 @@ export default function Library() {
                                                 </TableHead>
 
                                                 <TableBody>
-                                                    {videos.map((video, videoIndex) => {
+                                                    {playlist.videos.map((video, videoIndex) => {
                                                         const videoKey = getVideoKey(
                                                             source,
                                                             collection,
@@ -339,7 +375,7 @@ export default function Library() {
                                                                     source,
                                                                     collection,
                                                                     videoIndex,
-                                                                    videos,
+                                                                    playlist.videos,
                                                                     event.shiftKey
                                                                 )
                                                             }
@@ -360,7 +396,7 @@ export default function Library() {
                                                                             source,
                                                                             collection,
                                                                             videoIndex,
-                                                                            videos,
+                                                                            playlist.videos,
                                                                             event.shiftKey
                                                                         );
                                                                     }}
@@ -381,7 +417,7 @@ export default function Library() {
                                                             <TableCell>
                                                                 <IconButton
                                                                     component="a"
-                                                                    href={video.external_url}
+                                                                    href={video.external_url ?? undefined}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     aria-label={`Open ${video.title} in new tab`}
@@ -417,6 +453,7 @@ export default function Library() {
                         bottom: 24,
                         zIndex: 1100,
                     }}
+                    onClick={handleSubmit}
                     aria-label={`Submit ${selectedVideos.size} selected videos`}
                 >
                     <SendIcon sx={{ mr: 1 }} />

@@ -100,6 +100,27 @@ async def generate_files(files: list[UploadFile] = File(...)) -> StreamingRespon
     )
 
 
+class SelectionGenerateRequest(BaseModel):
+    videos: list[DownloadableVideo]
+
+
+@app.post('/api/generate/selections')
+async def generate_external_source(request: SelectionGenerateRequest):
+    with db_utils.get_connection() as con:
+        zip_buffer = video_utils.process_submissions(con, request.videos,
+                                                     ingestion_func=external_sources_utils.ingest_video)
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition":
+                'attachment; filename="local-qr-codes.zip"'
+        },
+    )
+
+
+from src.external_sources import external_sources_utils
+from src.external_sources.models import DownloadableVideo
 from src.web_app.player_routes import router as player_router
 from src.web_app.tracking_routes import router as tracking_router
 from src.web_app.library_routes import router as library_router

@@ -5,6 +5,7 @@ from pathlib import Path
 import requests
 
 from src.external_sources.models import DownloadableVideo
+from internetarchive import download, get_item
 
 
 class ArchiveOrgSource:
@@ -34,6 +35,12 @@ class ArchiveOrgSource:
                 source='archive.org',
                 download_url=None,
                 thumbnail_url=None,
+                playlist_id=identifier,
                 external_url=self.DETAILS_URL.format(identifier=identifier, video_name=video_name)
             ))
         return videos
+
+    def download_video(self, video: DownloadableVideo) -> Path:
+        download(identifier=video.playlist_id, glob_pattern=f'{video.title}.mp4', destdir='media/')
+        return Path('media') / video.playlist_id / f'{video.title}.mp4'
+
