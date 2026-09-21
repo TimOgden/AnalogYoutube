@@ -1,35 +1,12 @@
-from typing import Any, Literal, Protocol
-from dataclasses import dataclass
+from typing import Protocol
 
-ExternalItemType = Literal["collection", "playlist", "video"]
-
-
-@dataclass(frozen=True)
-class ExternalItem:
-    id: str
-    title: str
-    type: ExternalItemType
-    source: str
-    parent_id: str | None = None
-    thumbnail_url: str | None = None
-
-
-@dataclass(frozen=True)
-class DownloadableVideo:
-    id: str
-    title: str
-    source: str
-    download_url: str
-    thumbnail_url: str | None = None
+from src.external_sources.models import DownloadableVideo
 
 
 class ExternalSource(Protocol):
-    def get_item(self, identifier: Any) -> ExternalItem:
-        ...
-    
-    def list_items(self, identifier: Any | None = None) -> list[ExternalItem]:
+    def get_item(self, identifier: str) -> dict:
         ...
 
-    def list_videos(self, identifier: Any | None = None) -> list[DownloadableVideo]:
+    def list_videos(self, identifier: str | None = None) -> list[DownloadableVideo]:
         ...
 

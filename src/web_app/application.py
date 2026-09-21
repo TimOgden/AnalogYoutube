@@ -102,8 +102,10 @@ async def generate_files(files: list[UploadFile] = File(...)) -> StreamingRespon
 
 from src.web_app.player_routes import router as player_router
 from src.web_app.tracking_routes import router as tracking_router
+from src.web_app.library_routes import router as library_router
 app.include_router(player_router)
 app.include_router(tracking_router)
+app.include_router(library_router)
 
 # chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --disable-session-crached-bubble --autoplay-policy=no-user-gesture-required http://127.0.0.1:1234/player
 
