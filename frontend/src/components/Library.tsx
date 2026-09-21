@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Box,
     Chip,
+    Collapse,
     Fab,
     Paper,
     Table,
@@ -14,6 +15,7 @@ import {
 } from "@mui/material";
 import Checkbox from "@mui/material/Checkbox";
 import IconButton from "@mui/material/IconButton";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SendIcon from "@mui/icons-material/Send";
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { getLibrary } from "../api/library";
@@ -31,27 +33,117 @@ type LibraryData = Record<
     Record<string, LibraryVideo[]>
 >;
 
+type LastSelectedVideo = {
+    source: string;
+    collection: string;
+    index: number;
+};
+
 
 export default function Library() {
     const [library, setLibrary] = useState<LibraryData | null>(null);
     const [selectedVideos, setSelectedVideos] = useState<Set<string>>(
         new Set()
     );
+    const [collapsedCollections, setCollapsedCollections] = useState<Set<string>>(
+        new Set()
+    );
+    const lastSelectedVideo = useRef<LastSelectedVideo | null>(null);
 
     const getVideoKey = (source: string, collection: string, videoId: string) =>
         `${source}-${collection}-${videoId}`;
 
-    const toggleVideo = (videoKey: string) => {
+    const selectVideo = (
+        source: string,
+        collection: string,
+        videoIndex: number,
+        videos: LibraryVideo[],
+        shiftKey: boolean
+    ) => {
+        const currentVideoKey = getVideoKey(
+            source,
+            collection,
+            videos[videoIndex].id
+        );
+        const previousSelection = lastSelectedVideo.current;
+        const shouldUseRange =
+            shiftKey &&
+            previousSelection?.source === source &&
+            previousSelection.collection === collection;
+
+        lastSelectedVideo.current = {
+            source,
+            collection,
+            index: videoIndex,
+        };
+
         setSelectedVideos((currentSelection) => {
             const nextSelection = new Set(currentSelection);
+            const rangeStart = shouldUseRange
+                ? Math.min(previousSelection.index, videoIndex)
+                : videoIndex;
+            const rangeEnd = shouldUseRange
+                ? Math.max(previousSelection.index, videoIndex)
+                : videoIndex;
+            const shouldDeselect = currentSelection.has(currentVideoKey);
 
-            if (nextSelection.has(videoKey)) {
-                nextSelection.delete(videoKey);
-            } else {
-                nextSelection.add(videoKey);
+            for (let index = rangeStart; index <= rangeEnd; index += 1) {
+                const videoKey = getVideoKey(
+                    source,
+                    collection,
+                    videos[index].id
+                );
+
+                if (shouldDeselect) {
+                    nextSelection.delete(videoKey);
+                } else {
+                    nextSelection.add(videoKey);
+                }
             }
 
             return nextSelection;
+        });
+    };
+
+    const toggleCollection = (
+        source: string,
+        collection: string,
+        videos: LibraryVideo[]
+    ) => {
+        const videoKeys = videos.map((video) =>
+            getVideoKey(source, collection, video.id)
+        );
+        const allSelected = videoKeys.every((videoKey) =>
+            selectedVideos.has(videoKey)
+        );
+
+        setSelectedVideos((currentSelection) => {
+            const nextSelection = new Set(currentSelection);
+
+            videoKeys.forEach((videoKey) => {
+                if (allSelected) {
+                    nextSelection.delete(videoKey);
+                } else {
+                    nextSelection.add(videoKey);
+                }
+            });
+
+            return nextSelection;
+        });
+        lastSelectedVideo.current = null;
+    };
+
+    const toggleCollectionCollapsed = (collectionKey: string) => {
+        setCollapsedCollections((currentCollapsed) => {
+            const nextCollapsed = new Set(currentCollapsed);
+
+            if (nextCollapsed.has(collectionKey)) {
+                nextCollapsed.delete(collectionKey);
+            } else {
+                nextCollapsed.add(collectionKey);
+            }
+
+            return nextCollapsed;
         });
     };
 
@@ -114,9 +206,23 @@ export default function Library() {
                             </Typography>
 
                             {Object.entries(collections).map(
-                                ([collection, videos]) => (
+                                ([collection, videos]) => {
+                                    const selectedCount = videos.filter((video) =>
+                                        selectedVideos.has(
+                                            getVideoKey(source, collection, video.id)
+                                        )
+                                    ).length;
+                                    const allSelected =
+                                        videos.length > 0 &&
+                                        selectedCount === videos.length;
+                                    const collectionKey = `${source}-${collection}`;
+                                    const isCollapsed = collapsedCollections.has(
+                                        collectionKey
+                                    );
+
+                                    return (
                                     <Box
-                                        key={`${source}-${collection}`}
+                                        key={collectionKey}
                                         sx={{ mb: 4 }}
                                     >
                                         <Box
@@ -127,6 +233,42 @@ export default function Library() {
                                                 mb: 1.5,
                                             }}
                                         >
+                                            <Checkbox
+                                                checked={allSelected}
+                                                indeterminate={
+                                                    selectedCount > 0 && !allSelected
+                                                }
+                                                disabled={videos.length === 0}
+                                                onChange={() =>
+                                                    toggleCollection(
+                                                        source,
+                                                        collection,
+                                                        videos
+                                                    )
+                                                }
+                                                slotProps={{
+                                                    input: {
+                                                        "aria-label": `Select all videos in ${collection}`,
+                                                    },
+                                                }}
+                                            />
+                                            <IconButton
+                                                size="small"
+                                                onClick={() =>
+                                                    toggleCollectionCollapsed(collectionKey)
+                                                }
+                                                aria-expanded={!isCollapsed}
+                                                aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${collection}`}
+                                            >
+                                                <ExpandMoreIcon
+                                                    sx={{
+                                                        transform: isCollapsed
+                                                            ? "rotate(-90deg)"
+                                                            : "rotate(0deg)",
+                                                        transition: "transform 150ms ease",
+                                                    }}
+                                                />
+                                            </IconButton>
                                             <Typography
                                                 variant="h6"
                                                 sx={{ fontWeight: 600 }}
@@ -145,16 +287,17 @@ export default function Library() {
                                             />
                                         </Box>
 
-                                        <TableContainer
-                                            component={Paper}
-                                            sx={{
-                                                borderRadius: 2,
-                                                overflowX: "hidden",
-                                                maxHeight: 400,
-                                                overflowY: "auto",
-                                            }}
-                                        >
-                                            <Table>
+                                        <Collapse in={!isCollapsed}>
+                                            <TableContainer
+                                                component={Paper}
+                                                sx={{
+                                                    borderRadius: 2,
+                                                    overflowX: "hidden",
+                                                    maxHeight: 400,
+                                                    overflowY: "auto",
+                                                }}
+                                            >
+                                                <Table>
                                                 <TableHead>
                                                     <TableRow>
                                                         <TableCell padding="checkbox" />
@@ -176,7 +319,7 @@ export default function Library() {
                                                 </TableHead>
 
                                                 <TableBody>
-                                                    {videos.map((video) => {
+                                                    {videos.map((video, videoIndex) => {
                                                         const videoKey = getVideoKey(
                                                             source,
                                                             collection,
@@ -191,7 +334,15 @@ export default function Library() {
                                                             key={video.id}
                                                             hover
                                                             selected={isSelected}
-                                                            onClick={() => toggleVideo(videoKey)}
+                                                            onClick={(event) =>
+                                                                selectVideo(
+                                                                    source,
+                                                                    collection,
+                                                                    videoIndex,
+                                                                    videos,
+                                                                    event.shiftKey
+                                                                )
+                                                            }
                                                             sx={{
                                                                 cursor: "pointer",
                                                                 "&:last-child td": {
@@ -202,8 +353,17 @@ export default function Library() {
                                                             <TableCell padding="checkbox">
                                                                 <Checkbox
                                                                     checked={isSelected}
-                                                                    onChange={() => toggleVideo(videoKey)}
-                                                                    onClick={(event) => event.stopPropagation()}
+                                                                    onChange={() => undefined}
+                                                                    onClick={(event) => {
+                                                                        event.stopPropagation();
+                                                                        selectVideo(
+                                                                            source,
+                                                                            collection,
+                                                                            videoIndex,
+                                                                            videos,
+                                                                            event.shiftKey
+                                                                        );
+                                                                    }}
                                                                     slotProps={{
                                                                         input: {
                                                                             "aria-label": `Select ${video.title}`,
@@ -235,10 +395,12 @@ export default function Library() {
                                                         );
                                                     })}
                                                 </TableBody>
-                                            </Table>
-                                        </TableContainer>
+                                                </Table>
+                                            </TableContainer>
+                                        </Collapse>
                                     </Box>
-                                )
+                                    );
+                                }
                             )}
                         </Box>
                     )
