@@ -18,6 +18,7 @@ import IconButton from "@mui/material/IconButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SendIcon from "@mui/icons-material/Send";
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import styles from '../components/styles/QRGenerator.module.less';
 import { getLibrary, submitSelections } from "../api/library";
 
 
@@ -196,270 +197,265 @@ export default function Library() {
     }, []);
 
     return (
-        <Box
-            sx={{
-                width: "100%",
-                maxWidth: 1000,
-                mx: "auto",
-                px: 3,
-                py: 5,
-            }}
-        >
-            <Box sx={{ mb: 4 }}>
-                <Typography
-                    variant="h3"
-                    component="h1"
-                    sx={{ fontWeight: 700, mb: 1 }}
-                >
-                    📚 Library
-                </Typography>
+        <section className={styles.card}>
+            <Box
+                sx={{
+                    width: "100%",
+                    maxWidth: 1000,
+                    mx: "auto",
+                    px: 3,
+                    py: 5,
+                }}
+            >
+                <Box sx={{ mb: 4 }}>
+                    <h2>Create Cards from External Sources</h2>
+                    <Typography color="text.secondary">
+                        Browse curated public-domain videos from sources like archive.org
+                    </Typography>
+                </Box>
 
-                <Typography color="text.secondary">
-                    Browse videos available in your library.
-                </Typography>
-            </Box>
+                {!library ? (
+                    <Typography color="text.secondary">
+                        Loading library...
+                    </Typography>
+                ) : Object.keys(library).length === 0 ? (
+                    <Typography color="text.secondary">
+                        Your library is empty.
+                    </Typography>
+                ) : (
+                    Object.entries(library).map(
+                        ([source, collections]) => (
+                            <Box key={source} sx={{ mb: 5 }}>
+                                <Typography
+                                    variant="h5"
+                                    sx={{
+                                        fontWeight: 700,
+                                        mb: 2,
+                                    }}
+                                >
+                                    {source}
+                                </Typography>
 
-            {!library ? (
-                <Typography color="text.secondary">
-                    Loading library...
-                </Typography>
-            ) : Object.keys(library).length === 0 ? (
-                <Typography color="text.secondary">
-                    Your library is empty.
-                </Typography>
-            ) : (
-                Object.entries(library).map(
-                    ([source, collections]) => (
-                        <Box key={source} sx={{ mb: 5 }}>
-                            <Typography
-                                variant="h5"
-                                sx={{
-                                    fontWeight: 700,
-                                    mb: 2,
-                                }}
-                            >
-                                {source}
-                            </Typography>
+                                {Object.entries(collections).map(
+                                    ([collection, playlist]) => {
+                                        const selectedCount = playlist.videos.filter((video) =>
+                                            selectedVideos.has(
+                                                getVideoKey(source, collection, video.id)
+                                            )
+                                        ).length;
+                                        const allSelected =
+                                            playlist.videos.length > 0 &&
+                                            selectedCount === playlist.videos.length;
+                                        const collectionKey = `${source}-${collection}`;
+                                        const isCollapsed = collapsedCollections.has(
+                                            collectionKey
+                                        );
 
-                            {Object.entries(collections).map(
-                                ([collection, playlist]) => {
-                                    const selectedCount = playlist.videos.filter((video) =>
-                                        selectedVideos.has(
-                                            getVideoKey(source, collection, video.id)
-                                        )
-                                    ).length;
-                                    const allSelected =
-                                        playlist.videos.length > 0 &&
-                                        selectedCount === playlist.videos.length;
-                                    const collectionKey = `${source}-${collection}`;
-                                    const isCollapsed = collapsedCollections.has(
-                                        collectionKey
-                                    );
-
-                                    return (
-                                    <Box
-                                        key={collectionKey}
-                                        sx={{ mb: 4 }}
-                                    >
+                                        return (
                                         <Box
-                                            sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: 1.5,
-                                                mb: 1.5,
-                                            }}
+                                            key={collectionKey}
+                                            sx={{ mb: 4 }}
                                         >
-                                            <Checkbox
-                                                checked={allSelected}
-                                                indeterminate={
-                                                    selectedCount > 0 && !allSelected
-                                                }
-                                                disabled={playlist.videos.length === 0}
-                                                onChange={() =>
-                                                    toggleCollection(
-                                                        source,
-                                                        collection,
-                                                        playlist.videos
-                                                    )
-                                                }
-                                                slotProps={{
-                                                    input: {
-                                                        "aria-label": `Select all videos in ${collection}`,
-                                                    },
-                                                }}
-                                            />
-                                            <IconButton
-                                                size="small"
-                                                onClick={() =>
-                                                    toggleCollectionCollapsed(collectionKey)
-                                                }
-                                                aria-expanded={!isCollapsed}
-                                                aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${collection}`}
-                                            >
-                                                <ExpandMoreIcon
-                                                    sx={{
-                                                        transform: isCollapsed
-                                                            ? "rotate(-90deg)"
-                                                            : "rotate(0deg)",
-                                                        transition: "transform 150ms ease",
-                                                    }}
-                                                />
-                                            </IconButton>
-                                            <Typography
-                                                variant="h6"
-                                                sx={{ fontWeight: 600 }}
-                                            >
-                                                {playlist.display_name}
-                                            </Typography>
-
-                                            <Chip
-                                                label={`${playlist.videos.length} ${
-                                                    playlist.videos.length === 1
-                                                        ? "video"
-                                                        : "videos"
-                                                }`}
-                                                size="small"
-                                                variant="outlined"
-                                            />
-                                        </Box>
-
-                                        <Collapse in={!isCollapsed}>
-                                            <TableContainer
-                                                component={Paper}
+                                            <Box
                                                 sx={{
-                                                    borderRadius: 2,
-                                                    overflowX: "hidden",
-                                                    maxHeight: 400,
-                                                    overflowY: "auto",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 1.5,
+                                                    mb: 1.5,
                                                 }}
                                             >
-                                                <Table>
-                                                <TableHead>
-                                                    <TableRow>
-                                                        <TableCell padding="checkbox" />
-                                                        <TableCell
-                                                            sx={{
-                                                                fontWeight: 700,
-                                                            }}
-                                                        >
-                                                            Video
-                                                        </TableCell>
-                                                        <TableCell
-                                                            sx={{
-                                                                fontWeight: 700,
-                                                            }}
-                                                        >
-                                                            Link
-                                                        </TableCell>
-                                                    </TableRow>
-                                                </TableHead>
-
-                                                <TableBody>
-                                                    {playlist.videos.map((video, videoIndex) => {
-                                                        const videoKey = getVideoKey(
+                                                <Checkbox
+                                                    checked={allSelected}
+                                                    indeterminate={
+                                                        selectedCount > 0 && !allSelected
+                                                    }
+                                                    disabled={playlist.videos.length === 0}
+                                                    onChange={() =>
+                                                        toggleCollection(
                                                             source,
                                                             collection,
-                                                            video.id
-                                                        );
-                                                        const isSelected = selectedVideos.has(
-                                                            videoKey
-                                                        );
+                                                            playlist.videos
+                                                        )
+                                                    }
+                                                    slotProps={{
+                                                        input: {
+                                                            "aria-label": `Select all videos in ${collection}`,
+                                                        },
+                                                    }}
+                                                />
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() =>
+                                                        toggleCollectionCollapsed(collectionKey)
+                                                    }
+                                                    aria-expanded={!isCollapsed}
+                                                    aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${collection}`}
+                                                >
+                                                    <ExpandMoreIcon
+                                                        sx={{
+                                                            transform: isCollapsed
+                                                                ? "rotate(-90deg)"
+                                                                : "rotate(0deg)",
+                                                            transition: "transform 150ms ease",
+                                                        }}
+                                                    />
+                                                </IconButton>
+                                                <Typography
+                                                    variant="h6"
+                                                    sx={{ fontWeight: 600 }}
+                                                >
+                                                    {playlist.display_name}
+                                                </Typography>
 
-                                                        return (
-                                                        <TableRow
-                                                            key={video.id}
-                                                            hover
-                                                            selected={isSelected}
-                                                            onClick={(event) =>
-                                                                selectVideo(
-                                                                    source,
-                                                                    collection,
-                                                                    videoIndex,
-                                                                    playlist.videos,
-                                                                    event.shiftKey
-                                                                )
-                                                            }
-                                                            sx={{
-                                                                cursor: "pointer",
-                                                                "&:last-child td": {
-                                                                    borderBottom: 0,
-                                                                },
-                                                            }}
-                                                        >
-                                                            <TableCell padding="checkbox">
-                                                                <Checkbox
-                                                                    checked={isSelected}
-                                                                    onChange={() => undefined}
-                                                                    onClick={(event) => {
-                                                                        event.stopPropagation();
-                                                                        selectVideo(
-                                                                            source,
-                                                                            collection,
-                                                                            videoIndex,
-                                                                            playlist.videos,
-                                                                            event.shiftKey
-                                                                        );
-                                                                    }}
-                                                                    slotProps={{
-                                                                        input: {
-                                                                            "aria-label": `Select ${video.title}`,
-                                                                        },
-                                                                    }}
-                                                                />
+                                                <Chip
+                                                    label={`${playlist.videos.length} ${
+                                                        playlist.videos.length === 1
+                                                            ? "video"
+                                                            : "videos"
+                                                    }`}
+                                                    size="small"
+                                                    variant="outlined"
+                                                />
+                                            </Box>
+
+                                            <Collapse in={!isCollapsed}>
+                                                <TableContainer
+                                                    component={Paper}
+                                                    sx={{
+                                                        borderRadius: 2,
+                                                        overflowX: "hidden",
+                                                        maxHeight: 400,
+                                                        overflowY: "auto",
+                                                    }}
+                                                >
+                                                    <Table>
+                                                    <TableHead>
+                                                        <TableRow>
+                                                            <TableCell padding="checkbox" />
+                                                            <TableCell
+                                                                sx={{
+                                                                    fontWeight: 700,
+                                                                }}
+                                                            >
+                                                                Video
                                                             </TableCell>
-                                                            <TableCell>
-                                                                <Typography>
-                                                                    {
-                                                                        video.title
-                                                                    }
-                                                                </Typography>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <IconButton
-                                                                    component="a"
-                                                                    href={video.external_url ?? undefined}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    aria-label={`Open ${video.title} in new tab`}
-                                                                    size="small"
-                                                                    onClick={(event) => event.stopPropagation()}
-                                                                >
-                                                                    <OpenInNewIcon fontSize="small" />
-                                                                </IconButton>
+                                                            <TableCell
+                                                                sx={{
+                                                                    fontWeight: 700,
+                                                                }}
+                                                            >
+                                                                Link
                                                             </TableCell>
                                                         </TableRow>
-                                                        );
-                                                    })}
-                                                </TableBody>
-                                                </Table>
-                                            </TableContainer>
-                                        </Collapse>
-                                    </Box>
-                                    );
-                                }
-                            )}
-                        </Box>
-                    )
-                )
-            )}
+                                                    </TableHead>
 
-            {selectedVideos.size > 0 && (
-                <Fab
-                    variant="extended"
-                    color="primary"
-                    sx={{
-                        position: "fixed",
-                        right: 24,
-                        bottom: 24,
-                        zIndex: 1100,
-                    }}
-                    onClick={handleSubmit}
-                    aria-label={`Submit ${selectedVideos.size} selected videos`}
-                >
-                    <SendIcon sx={{ mr: 1 }} />
-                    Submit ({selectedVideos.size})
-                </Fab>
-            )}
-        </Box>
+                                                    <TableBody>
+                                                        {playlist.videos.map((video, videoIndex) => {
+                                                            const videoKey = getVideoKey(
+                                                                source,
+                                                                collection,
+                                                                video.id
+                                                            );
+                                                            const isSelected = selectedVideos.has(
+                                                                videoKey
+                                                            );
+
+                                                            return (
+                                                            <TableRow
+                                                                key={video.id}
+                                                                hover
+                                                                selected={isSelected}
+                                                                onClick={(event) =>
+                                                                    selectVideo(
+                                                                        source,
+                                                                        collection,
+                                                                        videoIndex,
+                                                                        playlist.videos,
+                                                                        event.shiftKey
+                                                                    )
+                                                                }
+                                                                sx={{
+                                                                    cursor: "pointer",
+                                                                    "&:last-child td": {
+                                                                        borderBottom: 0,
+                                                                    },
+                                                                }}
+                                                            >
+                                                                <TableCell padding="checkbox">
+                                                                    <Checkbox
+                                                                        checked={isSelected}
+                                                                        onChange={() => undefined}
+                                                                        onClick={(event) => {
+                                                                            event.stopPropagation();
+                                                                            selectVideo(
+                                                                                source,
+                                                                                collection,
+                                                                                videoIndex,
+                                                                                playlist.videos,
+                                                                                event.shiftKey
+                                                                            );
+                                                                        }}
+                                                                        slotProps={{
+                                                                            input: {
+                                                                                "aria-label": `Select ${video.title}`,
+                                                                            },
+                                                                        }}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Typography>
+                                                                        {
+                                                                            video.title
+                                                                        }
+                                                                    </Typography>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <IconButton
+                                                                        component="a"
+                                                                        href={video.external_url ?? undefined}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        aria-label={`Open ${video.title} in new tab`}
+                                                                        size="small"
+                                                                        onClick={(event) => event.stopPropagation()}
+                                                                    >
+                                                                        <OpenInNewIcon fontSize="small" />
+                                                                    </IconButton>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                            );
+                                                        })}
+                                                    </TableBody>
+                                                    </Table>
+                                                </TableContainer>
+                                            </Collapse>
+                                        </Box>
+                                        );
+                                    }
+                                )}
+                            </Box>
+                        )
+                    )
+                )}
+
+                {selectedVideos.size > 0 && (
+                    <Fab
+                        variant="extended"
+                        color="primary"
+                        sx={{
+                            position: "fixed",
+                            right: 24,
+                            bottom: 24,
+                            zIndex: 1100,
+                        }}
+                        onClick={handleSubmit}
+                        aria-label={`Submit ${selectedVideos.size} selected videos`}
+                    >
+                        <SendIcon sx={{ mr: 1 }} />
+                        Submit ({selectedVideos.size})
+                    </Fab>
+                )}
+            </Box>
+        </section>
     );
 }
