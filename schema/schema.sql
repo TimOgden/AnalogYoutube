@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS videos (
     source TEXT NOT NULL,
     thumbnail_path TEXT NOT NULL,
     video_url TEXT,
+    video_path TEXT,
     author_name TEXT
 );
 

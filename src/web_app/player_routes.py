@@ -24,7 +24,7 @@ templates = Jinja2Templates(directory='templates')
 
 
 class PlayRequest(BaseModel):
-    source: Literal['youtube'] | Literal['local'] | Literal['']
+    source: Literal['youtube'] | Literal['local'] | Literal['library']
     video_id: str
     device_id: str
 
@@ -44,26 +44,22 @@ class ControlRequest(BaseModel):
     command: PlayerCommand
 
 
-async def broadcast(message: dict) -> None:
-    disconnected = []
-
-    for websocket in connected_players:
-        try:
-            await websocket.send_json(message)
-        except Exception:
-            disconnected.append(websocket)
-
-    for websocket in disconnected:
+async def broadcast(websocket: WebSocket, message: dict) -> None:
+    try:
+        await websocket.send_json(message)
+    except Exception as e:
         connected_players.discard(websocket)
+        raise e
 
 
 @router.post("/api/control")
 async def control_player(request: ControlRequest):
     logger.info(f'Sending command: {request} to player...')
-    await broadcast({
-        "type": "control",
-        "command": request.command,
-    })
+    for websocket in connected_players:
+        await broadcast(websocket, {
+            "type": "control",
+            "command": request.command,
+        })
 
     return {"status": "ok"}
 
@@ -114,9 +110,12 @@ async def player_websocket(websocket: WebSocket) -> None:
 
 @router.get('/api/localVideos/{video_id}')
 def get_local_video(video_id: str):
-    path = MEDIA_PATH / 'videos' / f"{video_id}.mp4"
+    with db_utils.get_connection() as con:
+        video = video_utils.get_video(con, video_id)
 
-    if not path.exists():
+    path = video.video_path
+
+    if path is None or not path.exists():
         raise HTTPException(status_code=404)
 
     return FileResponse(
@@ -131,11 +130,10 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
     with db_utils.get_connection() as cur:
         player_utils.submit_new_session(session, cur)
 
-    disconnected: list[WebSocket] = []
     for websocket in connected_players:
         try:
             logger.info(f'Sending video id {request.video_id} to websocket {websocket}...')
-            await broadcast({
+            await broadcast(websocket, {
                     'type': 'play',
                     'source': request.source,
                     'video_id': request.video_id,
@@ -143,13 +141,10 @@ async def play_video(request: PlayRequest) -> dict[str, str]:
                 }
             )
 
-        except Exception as e:
+        except Exception:
             logger.error(f'Error sending video id {request.video_id} to websocket {websocket}')
             traceback.print_exc()
-            disconnected.append(websocket)
-    
-    for websocket in disconnected:
-        connected_players.discard(websocket)
+
     return {'status': 'playing', 'session_id': session.session_id}
 
 

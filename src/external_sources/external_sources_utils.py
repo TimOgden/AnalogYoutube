@@ -57,6 +57,7 @@ def ingest_video(video: DownloadableVideo) -> Video:
         source=VideoSource.LIBRARY,
         thumbnail_path=thumbnail_path,
         video_url=video.external_url,
+        video_path=filepath,
         author_name=video.source,
     )
 

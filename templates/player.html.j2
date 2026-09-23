@@ -333,7 +333,7 @@
                 case "play":
                     if(message.source === "youtube") {
                         playYoutubeVideo(message.video_id, message.session_id);
-                    } else if(message.source === "local") {
+                    } else if(message.source === "local" || message.source === "library") {
                         playLocalVideo(message.video_id, message.session_id);
                     }
                     

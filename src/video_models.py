@@ -27,5 +27,6 @@ class Video:
     title: str
     source: VideoSource
     thumbnail_path: Path
+    video_path: Path | None = None
     video_url: str | None = field(default=None)
     author_name: str | None = field(default=None)

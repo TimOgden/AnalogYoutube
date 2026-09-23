@@ -41,6 +41,6 @@ class ArchiveOrgSource:
         return videos
 
     def download_video(self, video: DownloadableVideo) -> Path:
-        download(identifier=video.playlist_id, glob_pattern=f'{video.title}.mp4', destdir='media/')
-        return Path('media') / video.playlist_id / f'{video.title}.mp4'
+        download(identifier=video.playlist_id, glob_pattern=f'{video.title}.mp4', destdir='media/videos/')
+        return Path('media') / 'videos' / video.playlist_id / f'{video.title}.mp4'
 

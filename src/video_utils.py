@@ -45,20 +45,23 @@ def _save_videos(con: Connection, videos: list[Video]) -> None:
         source,
         thumbnail_path,
         video_url,
+        video_path,
         author_name
-    ) VALUES (?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(video_id) DO UPDATE SET
         title = excluded.title,
         source = excluded.source,
         thumbnail_path = excluded.thumbnail_path,
         video_url = excluded.video_url,
+        video_path = excluded.video_path,
         author_name = excluded.author_name;
     """
 
     param_list = []
     for video in videos:
+        video_path = str(video.video_path) if video.video_path is not None else None
         param_list.append((video.video_id, video.title, video.source.value,
-                           str(video.thumbnail_path), video.video_url, video.author_name))
+                           str(video.thumbnail_path), video.video_url, video_path, video.author_name))
     con.executemany(sql, param_list)
 
 
@@ -82,5 +85,6 @@ def get_video(con: Connection, video_id: str) -> Video:
         source=VideoSource(result['source']),
         thumbnail_path=Path(result['thumbnail_path']),
         video_url=result['video_url'],
+        video_path=Path(result['video_path']) if result['video_path'] else None,
         author_name=result['author_name'],
     )

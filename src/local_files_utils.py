@@ -119,7 +119,7 @@ def ingest_video(file: UploadFile) -> Video:
 
     thumbnail = get_thumbnail(file)
     thumbnail_path = thumbnail_utils.save_thumbnail(thumbnail, video_id)
-    _save_media(file, video_id)
+    filepath = _save_media(file, video_id)
 
     return Video(
         video_id=video_id,
@@ -127,5 +127,6 @@ def ingest_video(file: UploadFile) -> Video:
         source=VideoSource.LOCAL,
         thumbnail_path=thumbnail_path,
         video_url=None,
+        video_path=filepath,
         author_name=None,
     )

@@ -129,7 +129,8 @@ app.include_router(tracking_router)
 app.include_router(library_router)
 
 # chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --disable-session-crached-bubble --autoplay-policy=no-user-gesture-required http://127.0.0.1:1234/player
-
+# local: e8a2ed3b-90eb-4744-a873-de3b44e0b6ff
+# library: 1b12fb00e0e6799fe9a3ae0147a5f631afd24b1b
 
 def main() -> None:
     uvicorn.run(app, host='0.0.0.0', port=int(os.getenv('PORT_NUMBER', 8000)))
