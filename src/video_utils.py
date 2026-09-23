@@ -74,17 +74,24 @@ def _to_html_files(videos: list[Video], output_dir: Path) -> list[Path]:
     return filepaths
 
 
+def row_to_video(row: dict) -> Video:
+    video_path = Path(row['video_path']) if row['video_path'] else None
+    thumbnail_path = Path(row['thumbnail_path']) if row['thumbnail_path'] else None
+
+    return Video(
+        video_id=row['video_id'],
+        title=row['title'],
+        source=VideoSource(row['source']),
+        thumbnail_path=thumbnail_path,
+        video_url=row['video_url'],
+        video_path=video_path,
+        author_name=row['author_name'],
+    )
+
+
 def get_video(con: Connection, video_id: str) -> Video:
     cursor = con.cursor()
     cursor.execute("""SELECT * FROM videos where video_id=?""", (video_id,))
     result = cursor.fetchone()
 
-    return Video(
-        video_id=result['video_id'],
-        title=result['title'],
-        source=VideoSource(result['source']),
-        thumbnail_path=Path(result['thumbnail_path']),
-        video_url=result['video_url'],
-        video_path=Path(result['video_path']) if result['video_path'] else None,
-        author_name=result['author_name'],
-    )
+    return row_to_video(result)

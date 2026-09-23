@@ -38,31 +38,6 @@ app = FastAPI(
 )
 
 
-@app.get("/", response_class=HTMLResponse)
-def index() -> str:
-    return """
-    <!doctype html>
-    <html>
-      <body>
-        <h1>YouTube QR Code Generator</h1>
-
-        <form method="post" action="/generate">
-          <label for="urls">YouTube links, one per line:</label><br>
-          <textarea
-            id="urls"
-            name="urls"
-            rows="12"
-            cols="70"
-            required
-          ></textarea><br><br>
-
-          <button type="submit">Generate QR codes</button>
-        </form>
-      </body>
-    </html>
-    """
-
-
 class URLGenerateRequest(BaseModel):
     urls: list[str]
 
@@ -124,9 +99,11 @@ from src.external_sources.models import DownloadableVideo
 from src.web_app.player_routes import router as player_router
 from src.web_app.tracking_routes import router as tracking_router
 from src.web_app.library_routes import router as library_router
+from src.web_app.video_routes import router as video_router
 app.include_router(player_router)
 app.include_router(tracking_router)
 app.include_router(library_router)
+app.include_router(video_router)
 
 # chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --disable-session-crached-bubble --autoplay-policy=no-user-gesture-required http://127.0.0.1:1234/player
 # local: e8a2ed3b-90eb-4744-a873-de3b44e0b6ff
