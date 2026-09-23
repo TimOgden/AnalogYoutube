@@ -1,21 +1,265 @@
 import { useEffect, useState } from "react";
+import {
+    Box,
+    Button,
+    Card,
+    CardActionArea,
+    CardContent,
+    CardMedia,
+    Checkbox,
+    Chip,
+    Typography,
+} from "@mui/material";
 import { getVideos } from "../api/videos";
+import { submitUrls } from "../api/qrGeneration";
 
-interface VideoViewerProps {
 
-}
+type Video = {
+    video_id: string;
+    title: string;
+    source: "library" | "local" | "youtube";
+    thumbnail_path: string;
+    thumbnail_url: string;
+    video_path: string | null;
+    video_url: string | null;
+    author_name: string | null;
+};
 
-export default function VideoViewer({ }: VideoViewerProps) {
-    const [videos, setVideos] = useState([]);
+
+const SOURCE_ORDER: Video["source"][] = [
+    "library",
+    "local",
+    "youtube",
+];
+
+const SOURCE_LABELS: Record<Video["source"], string> = {
+    library: "Library",
+    local: "Local Videos",
+    youtube: "YouTube",
+};
+
+
+export default function VideoViewer() {
+    const [videos, setVideos] = useState<Video[]>([]);
+    const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(
+        new Set(),
+    );
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        
+    };
 
     useEffect(() => {
         getVideos()
-            .then((response: any) => {
+            .then((response: Video[]) => {
                 setVideos(response);
             })
             .catch(console.error);
     }, []);
 
-    return (<>
-    </>)
+    function toggleVideo(videoId: string) {
+        setSelectedVideoIds((current) => {
+            const updated = new Set(current);
+
+            if (updated.has(videoId)) {
+                updated.delete(videoId);
+            } else {
+                updated.add(videoId);
+            }
+
+            return updated;
+        });
+    }
+
+    return (
+        <Box
+            sx={{
+                width: "100%",
+                maxWidth: 1200,
+                mx: "auto",
+                px: 3,
+                py: 5,
+            }}
+        >
+            <Box sx={{ mb: 4 }}>
+                <Typography
+                    variant="h3"
+                    component="h1"
+                    sx={{ fontWeight: 700, mb: 1 }}
+                >
+                    Videos
+                </Typography>
+
+                <Typography color="text.secondary">
+                    Browse your videos and select videos to generate QR cards.
+                </Typography>
+            </Box>
+
+            <Box
+                sx={{
+                    position: "fixed",
+                    right: 32,
+                    top: 120,
+                    zIndex: 10,
+                }}
+            >
+                <Button
+                    variant="contained"
+                    disabled={selectedVideoIds.size === 0}
+                    onClick={handleSubmit}
+                    sx={{
+                        boxShadow: 3,
+                        whiteSpace: "nowrap",
+                    }}
+                >
+                    Generate Cards
+                </Button>
+            </Box>
+
+            {SOURCE_ORDER.map((source) => {
+                const sourceVideos = videos.filter(
+                    (video) => video.source === source,
+                );
+
+                if (sourceVideos.length === 0) {
+                    return null;
+                }
+
+                return (
+                    <Box key={source} sx={{ mb: 6 }}>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1.5,
+                                mb: 2,
+                            }}
+                        >
+                            <Typography
+                                variant="h5"
+                                sx={{ fontWeight: 700 }}
+                            >
+                                {SOURCE_LABELS[source]}
+                            </Typography>
+
+                            <Chip
+                                size="small"
+                                variant="outlined"
+                                label={`${sourceVideos.length} ${
+                                    sourceVideos.length === 1
+                                        ? "video"
+                                        : "videos"
+                                }`}
+                            />
+                        </Box>
+
+                        <Box
+                            sx={{
+                                display: "grid",
+                                gridTemplateColumns: {
+                                    xs: "1fr",
+                                    sm: "repeat(2, 1fr)",
+                                    md: "repeat(3, 1fr)",
+                                    lg: "repeat(4, 1fr)",
+                                },
+                                gap: 2,
+                            }}
+                        >
+                            {sourceVideos.map((video) => {
+                                const selected =
+                                    selectedVideoIds.has(video.video_id);
+
+                                return (
+                                    <Card
+                                        key={video.video_id}
+                                        variant="outlined"
+                                        sx={{
+                                            position: "relative",
+                                            height: "100%",
+                                            borderWidth: selected ? 2 : 1,
+                                        }}
+                                    >
+                                        <CardActionArea
+                                            onClick={() =>
+                                                toggleVideo(video.video_id)
+                                            }
+                                            sx={{
+                                                height: "100%",
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                alignItems: "stretch",
+                                                justifyContent: "flex-start",
+                                            }}
+                                        >
+                                            <Box
+                                                sx={{
+                                                    position: "absolute",
+                                                    top: 4,
+                                                    right: 4,
+                                                    zIndex: 1,
+                                                    bgcolor:
+                                                        "background.paper",
+                                                    borderRadius: "50%",
+                                                }}
+                                            >
+                                                <Checkbox
+                                                    checked={selected}
+                                                    tabIndex={-1}
+                                                    disableRipple
+                                                    inputProps={{
+                                                        "aria-label":
+                                                            `Select ${video.title}`,
+                                                    }}
+                                                />
+                                            </Box>
+
+                                            <CardMedia
+                                                component="img"
+                                                image={
+                                                    video.thumbnail_url
+                                                }
+                                                alt={`Thumbnail for ${video.title}`}
+                                                sx={{
+                                                    width: "100%",
+                                                    aspectRatio: "16 / 9",
+                                                    objectFit: "cover",
+                                                }}
+                                            />
+
+                                            <CardContent
+                                                sx={{
+                                                    width: "100%",
+                                                    boxSizing: "border-box",
+                                                }}
+                                            >
+                                                <Typography
+                                                    variant="subtitle1"
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        lineHeight: 1.3,
+                                                    }}
+                                                >
+                                                    {video.title}
+                                                </Typography>
+
+                                                {video.author_name && (
+                                                    <Typography
+                                                        variant="body2"
+                                                        color="text.secondary"
+                                                        sx={{ mt: 0.75 }}
+                                                    >
+                                                        {video.author_name}
+                                                    </Typography>
+                                                )}
+                                            </CardContent>
+                                        </CardActionArea>
+                                    </Card>
+                                );
+                            })}
+                        </Box>
+                    </Box>
+                );
+            })}
+        </Box>
+    );
 }

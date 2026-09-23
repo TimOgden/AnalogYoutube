@@ -1,9 +1,10 @@
-from pathlib import Path
-
+from fastapi.responses import FileResponse
+from fastapi.exceptions import HTTPException
 from fastapi import APIRouter
 
 from src import db_utils, video_utils
-from src.video_models import Video, VideoSource
+from src.video_models import Video
+from src.consts import MEDIA_PATH
 
 router = APIRouter()
 
@@ -20,3 +21,16 @@ def get_videos() -> list[Video]:
     for row in rows:
         videos.append(video_utils.row_to_video(row))
     return videos
+
+
+@router.get("/api/videos/{video_id}/thumbnail")
+def get_video_thumbnail(video_id: str) -> FileResponse:
+    thumbnail_path = MEDIA_PATH / "thumbnails" / f"{video_id}.png"
+
+    if not thumbnail_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Thumbnail not found for video {video_id}",
+        )
+
+    return FileResponse(thumbnail_path)

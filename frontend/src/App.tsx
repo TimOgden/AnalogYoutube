@@ -3,12 +3,14 @@ import QRGenerators from "./components/QRGenerators"
 import Tracker from "./components/Tracker"
 import Header from "./components/Header"
 import Library from "./components/Library"
+import VideoViewer from "./components/VideoViewer"
 
 const pages = [
   {tabId: 0, label: 'Card Generator', component: <QRGenerators />},
   {tabId: 1, label: 'Library', component: <Library />},
-  {tabId: 2, label: 'Tracker', component: <Tracker />},
-  {tabId: 3, label: 'Settings', component: <div>Settings</div>},
+  {tabId: 2, label: 'View Videos', component: <VideoViewer />},
+  {tabId: 3, label: 'Tracker', component: <Tracker />},
+  {tabId: 4, label: 'Settings', component: <div>Settings</div>},
 ]
 
 
