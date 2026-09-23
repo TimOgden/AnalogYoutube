@@ -11,6 +11,17 @@ from src.qr_listener.qr_generator_utils import populate_qr_code_template
 from src.video_models import Video, VideoSource
 
 
+def _process_submissions(conn: Connection, submissions: list, ingestion_func: Callable,
+                         output_dir: Path) -> list[Path]:
+    videos = []
+    for submission in submissions:
+        video = ingestion_func(submission)
+        videos.append(video)
+
+    _save_videos(conn, videos)
+    return _to_html_files(videos, output_dir)
+
+
 def process_submissions(con: Connection, submissions: list,
                         ingestion_func: Callable) -> io.BytesIO:
     zip_buffer = io.BytesIO()
@@ -18,13 +29,31 @@ def process_submissions(con: Connection, submissions: list,
     with tempfile.TemporaryDirectory() as temp_dir:
         output_dir = pathlib.Path(temp_dir)
 
-        videos = []
-        for submission in submissions:
-            video = ingestion_func(submission)
-            videos.append(video)
+        html_files = _process_submissions(con, submissions, ingestion_func, output_dir)
+        
+        with zipfile.ZipFile(
+            zip_buffer,
+            mode="w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as archive:
+            for file_path in html_files:
+                archive.write(file_path, arcname=file_path.name)
 
-        html_files = _save_videos(con, videos)
-        html_files = _to_html_files(videos, output_dir)
+    zip_buffer.seek(0)
+    return zip_buffer
+
+
+def process_multi_submissions(conn: Connection, submissions: dict[str, list],
+                              ingestion_funcs: dict[str, Callable]) -> io.BytesIO:
+    zip_buffer = io.BytesIO()
+        
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_dir = pathlib.Path(temp_dir)
+
+        html_files = []
+        for source, ingestion_func in ingestion_funcs.items():
+            source_submissions = submissions[source]
+            html_files.append(_process_submissions(conn, source_submissions, ingestion_func, output_dir))
         
         with zipfile.ZipFile(
             zip_buffer,

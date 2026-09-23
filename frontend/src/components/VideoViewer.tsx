@@ -8,10 +8,11 @@ import {
     CardMedia,
     Checkbox,
     Chip,
+    CircularProgress,
     Typography,
 } from "@mui/material";
 import { getVideos } from "../api/videos";
-import { submitUrls } from "../api/qrGeneration";
+import { regenerateCards } from "../api/qrGeneration";
 
 
 type Video = {
@@ -41,13 +42,10 @@ const SOURCE_LABELS: Record<Video["source"], string> = {
 
 export default function VideoViewer() {
     const [videos, setVideos] = useState<Video[]>([]);
+    const [isGenerating, setIsGenerating] = useState(false);
     const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(
         new Set(),
     );
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        
-    };
 
     useEffect(() => {
         getVideos()
@@ -56,6 +54,26 @@ export default function VideoViewer() {
             })
             .catch(console.error);
     }, []);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+            setIsGenerating(true);
+            try {
+                e.preventDefault();
+    
+                const blob = await regenerateCards(videos);
+    
+                const downloadUrl = URL.createObjectURL(blob);
+    
+                const a = document.createElement("a");
+                a.href = downloadUrl;
+                a.download = "youtube-cards.zip";
+                a.click();
+    
+                URL.revokeObjectURL(downloadUrl);
+            } finally {
+                setIsGenerating(false);
+            }
+        };
 
     function toggleVideo(videoId: string) {
         setSelectedVideoIds((current) => {
@@ -104,15 +122,17 @@ export default function VideoViewer() {
                 }}
             >
                 <Button
+                    type="submit"
                     variant="contained"
-                    disabled={selectedVideoIds.size === 0}
+                    disabled={selectedVideoIds?.size === 0 || isGenerating}
                     onClick={handleSubmit}
-                    sx={{
-                        boxShadow: 3,
-                        whiteSpace: "nowrap",
-                    }}
+                    startIcon={
+                        isGenerating
+                            ? <CircularProgress size={18} color="inherit" />
+                            : undefined
+                    }
                 >
-                    Generate Cards
+                    {isGenerating ? "Generating Cards..." : "Generate Cards"}
                 </Button>
             </Box>
 

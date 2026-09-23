@@ -34,3 +34,26 @@ export async function submitFiles(files: File[]) {
 
     return response.blob();
 }
+
+interface Video {
+    source: string;
+    video_id: string;
+}
+
+export async function regenerateCards(videos: Video[]) {
+     const response = await fetch("/api/generate/multi", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            videos,
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
+    }
+
+    return response.blob();
+}

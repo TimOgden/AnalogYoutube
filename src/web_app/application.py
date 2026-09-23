@@ -94,6 +94,39 @@ async def generate_external_source(request: SelectionGenerateRequest):
     )
 
 
+class Video(BaseModel):
+    source: str
+    video_id: str
+
+
+class MultiGenerateRequest(BaseModel):
+    videos: list[Video]
+
+
+@app.post('/api/generate/multi')
+async def generate_multi(request: MultiGenerateRequest):
+    ingestion_funcs = {
+        'youtube': youtube_utils.ingest_video,
+        'library': external_sources_utils.ingest_video,
+        'local': local_files_utils.ingest_video,
+    }
+    source_submissions = {}
+    for source in ingestion_funcs:
+        source_submissions[source] = [video for video in request.videos if video.source == source]
+
+    with db_utils.get_connection() as conn:
+        zip_buffer = video_utils.process_multi_submissions(conn, source_submissions,
+                                                           ingestion_funcs=ingestion_funcs)
+    return StreamingResponse(
+            zip_buffer,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition":
+                    'attachment; filename="local-qr-codes.zip"'
+            },
+        )
+
+
 from src.external_sources import external_sources_utils
 from src.external_sources.models import DownloadableVideo
 from src.web_app.player_routes import router as player_router
