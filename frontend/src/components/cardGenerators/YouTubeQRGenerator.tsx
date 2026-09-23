@@ -1,29 +1,35 @@
 import { useState } from "react";
 import styles from "../styles/QRGenerator.module.less";
-import { TextField } from "@mui/material";
+import { Button, CircularProgress, TextField } from "@mui/material";
 import { submitUrls } from '../../api/qrGeneration.ts';
 
 export default function YouTubeQRGenerator() {
+    const [isGenerating, setIsGenerating] = useState(false);
     const [urls, setUrls] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+        setIsGenerating(true);
+        try {
+            e.preventDefault();
 
-        const urlList = urls
-            .split("\n")
-            .map(url => url.trim())
-            .filter(Boolean);
+            const urlList = urls
+                .split("\n")
+                .map(url => url.trim())
+                .filter(Boolean);
 
-        const blob = await submitUrls(urlList, "youtube");
+            const blob = await submitUrls(urlList, "youtube");
 
-        const downloadUrl = URL.createObjectURL(blob);
+            const downloadUrl = URL.createObjectURL(blob);
 
-        const a = document.createElement("a");
-        a.href = downloadUrl;
-        a.download = "youtube-cards.zip";
-        a.click();
+            const a = document.createElement("a");
+            a.href = downloadUrl;
+            a.download = "youtube-cards.zip";
+            a.click();
 
-        URL.revokeObjectURL(downloadUrl);
+            URL.revokeObjectURL(downloadUrl);
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     return (
@@ -48,12 +54,18 @@ export default function YouTubeQRGenerator() {
                     fullWidth
                 />
 
-                <button
+                <Button
                     type="submit"
+                    variant="contained"
                     disabled={!urls.trim()}
+                    startIcon={
+                        isGenerating
+                            ? <CircularProgress size={18} color="inherit" />
+                            : undefined
+                    }
                 >
-                    Generate Cards
-                </button>
+                    {isGenerating ? "Generating Cards..." : "Generate Cards"}
+                </Button>
             </form>
         </section>
     );

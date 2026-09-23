@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
     Box,
     Chip,
+    CircularProgress,
     Collapse,
     Fab,
     Paper,
@@ -50,6 +51,7 @@ type LastSelectedVideo = {
 
 
 export default function Library() {
+    const [isGenerating, setIsGenerating] = useState(false);
     const [library, setLibrary] = useState<LibraryData | null>(null);
     const [selectedVideos, setSelectedVideos] = useState<Set<string>>(
         new Set()
@@ -157,31 +159,37 @@ export default function Library() {
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!library) {
-            return;
+        setIsGenerating(true);
+        try {
+            e.preventDefault();
+            if (!library) {
+                return;
+            }
+
+            const videos = Object.entries(library).flatMap(
+                ([source, collections]) =>
+                    Object.entries(collections).flatMap(([collection, playlist]) =>
+                        playlist.videos.filter((video) =>
+                            selectedVideos.has(getVideoKey(source, collection, video.id))
+                        ).map((video) => ({
+                            ...video,
+                            playlist_id: playlist.id,
+                        }))
+                    )
+            );
+
+            const blob = await submitSelections(videos);
+            const downloadUrl = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = downloadUrl;
+            a.download = "archive_org-cards.zip";
+            a.click();
+
+            URL.revokeObjectURL(downloadUrl);
+        } finally {
+            setIsGenerating(false);
         }
-
-        const videos = Object.entries(library).flatMap(
-            ([source, collections]) =>
-                Object.entries(collections).flatMap(([collection, playlist]) =>
-                    playlist.videos.filter((video) =>
-                        selectedVideos.has(getVideoKey(source, collection, video.id))
-                    ).map((video) => ({
-                        ...video,
-                        playlist_id: playlist.id,
-                    }))
-                )
-        );
-
-        const blob = await submitSelections(videos);
-        const downloadUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = downloadUrl;
-        a.download = "archive_org-cards.zip";
-        a.click();
-
-        URL.revokeObjectURL(downloadUrl);
+        
     };
 
     useEffect(() => {
@@ -189,6 +197,11 @@ export default function Library() {
             getLibrary()
                 .then((response: LibraryData) => {
                     setLibrary(response);
+                    
+                    Object.entries(response).map((collection, playlist) => {
+                        const key = `${collection}-${playlist}`;
+                        setCollapsedCollections(new Set([...collapsedCollections,  key]));
+                    })
                 })
                 .catch(console.error);
         };
@@ -449,10 +462,24 @@ export default function Library() {
                             zIndex: 1100,
                         }}
                         onClick={handleSubmit}
+                        disabled={isGenerating}
                         aria-label={`Submit ${selectedVideos.size} selected videos`}
                     >
-                        <SendIcon sx={{ mr: 1 }} />
-                        Submit ({selectedVideos.size})
+                        {isGenerating ? (
+                            <>
+                                <CircularProgress
+                                    size={20}
+                                    color="inherit"
+                                    sx={{ mr: 1 }}
+                                />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <SendIcon sx={{ mr: 1 }} />
+                                Submit ({selectedVideos.size})
+                            </>
+                        )}
                     </Fab>
                 )}
             </Box>
