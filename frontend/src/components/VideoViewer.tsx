@@ -313,7 +313,7 @@ export default function VideoViewer() {
                         ) : (
                             <>
                                 <DeleteIcon sx={{ mr: 1 }} />
-                                Delete ({selectedVideoIds.size})
+                                Delete
                             </>
                         )}
                     </Fab>
