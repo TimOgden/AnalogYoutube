@@ -12,7 +12,6 @@ import { checkUpdates, startUpdate, type UpdateStatus } from '../api/settings';
 
 export default function Settings() {
     const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
-    const [token, setToken] = useState('');
     const [isChecking, setIsChecking] = useState(false);
     const [isStarting, setIsStarting] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
@@ -38,7 +37,7 @@ export default function Settings() {
         setError(null);
 
         try {
-            const response = await startUpdate(token);
+            const response = await startUpdate();
             setMessage(response.status === 'update_started'
                 ? 'Update started. The application will restart shortly.'
                 : response.status);
@@ -71,16 +70,9 @@ export default function Settings() {
 
                     {updateStatus?.update_available && (
                         <>
-                            <TextField
-                                label="Update token"
-                                type="password"
-                                value={token}
-                                onChange={(event) => setToken(event.target.value)}
-                                fullWidth
-                            />
                             <Button
                                 onClick={startUpdateProcess}
-                                disabled={!token || isStarting || isChecking}
+                                disabled={isStarting || isChecking}
                                 variant="contained"
                                 color="warning"
                             >

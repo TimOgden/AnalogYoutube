@@ -166,12 +166,6 @@ async def regenerate_multi(request: MultiRegenerateRequest):
 UPDATE_SCRIPT_PATH = pathlib.Path(
     os.getenv('UPDATE_SCRIPT_PATH', '/opt/analog-youtube/deploy/update.sh')
 )
-UPDATE_TOKEN = os.getenv('UPDATE_TOKEN')
-
-
-def _authorize_update_request(token: str | None) -> None:
-    if not UPDATE_TOKEN or token != UPDATE_TOKEN:
-        raise HTTPException(status_code=403, detail='Update authorization required')
 
 
 @app.get('/api/checkUpdates')
@@ -212,10 +206,7 @@ async def check_updates() -> dict[str, str | bool]:
 
 
 @app.post('/api/update')
-async def update(authorization: str | None = Header(default=None)) -> dict[str, str]:
-    token = authorization.removeprefix('Bearer ').strip() if authorization else None
-    _authorize_update_request(token)
-
+async def update() -> dict[str, str]:
     if not UPDATE_SCRIPT_PATH.is_file():
         raise HTTPException(status_code=503, detail='Update script is not available')
 
