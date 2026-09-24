@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
     Box,
-    Button,
     Card,
     CardActionArea,
     CardContent,
@@ -9,8 +8,10 @@ import {
     Checkbox,
     Chip,
     CircularProgress,
+    Fab,
     Typography,
 } from "@mui/material";
+import SendIcon from "@mui/icons-material/Send";
 import { getVideos } from "../api/videos";
 import { regenerateCards } from "../api/qrGeneration";
 
@@ -106,35 +107,12 @@ export default function VideoViewer() {
                     component="h1"
                     sx={{ fontWeight: 700, mb: 1 }}
                 >
-                    Videos
+                    Library
                 </Typography>
 
                 <Typography color="text.secondary">
-                    Browse your videos and select videos to generate QR cards.
+                    Browse your videos and regenerate QR cards.
                 </Typography>
-            </Box>
-
-            <Box
-                sx={{
-                    position: "fixed",
-                    right: 32,
-                    top: 120,
-                    zIndex: 10,
-                }}
-            >
-                <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={selectedVideoIds?.size === 0 || isGenerating}
-                    onClick={handleSubmit}
-                    startIcon={
-                        isGenerating
-                            ? <CircularProgress size={18} color="inherit" />
-                            : undefined
-                    }
-                >
-                    {isGenerating ? "Generating Cards..." : "Generate Cards"}
-                </Button>
             </Box>
 
             {SOURCE_ORDER.map((source) => {
@@ -281,6 +259,38 @@ export default function VideoViewer() {
                     </Box>
                 );
             })}
+
+            {selectedVideoIds.size > 0 && (
+                <Fab
+                    variant="extended"
+                    color="primary"
+                    sx={{
+                        position: "fixed",
+                        right: 24,
+                        bottom: 24,
+                        zIndex: 1100,
+                    }}
+                    onClick={handleSubmit}
+                    disabled={isGenerating}
+                    aria-label={`Submit ${selectedVideoIds.size} selected items`}
+                >
+                    {isGenerating ? (
+                        <>
+                            <CircularProgress
+                                size={20}
+                                color="inherit"
+                                sx={{ mr: 1 }}
+                            />
+                            Generating...
+                        </>
+                    ) : (
+                        <>
+                            <SendIcon sx={{ mr: 1 }} />
+                            Submit ({selectedVideoIds.size})
+                        </>
+                    )}
+                </Fab>
+            )}
         </Box>
     );
 }
