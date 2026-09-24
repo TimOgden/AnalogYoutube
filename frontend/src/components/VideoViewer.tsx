@@ -8,7 +8,13 @@ import {
     Checkbox,
     Chip,
     CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
     Fab,
+    Button,
     Typography,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
@@ -47,6 +53,7 @@ export default function VideoViewer() {
     const [videos, setVideos] = useState<Video[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(
         new Set(),
     );
@@ -81,16 +88,15 @@ export default function VideoViewer() {
         }
     };
 
-    const handleDelete = async (e: React.FormEvent) => {
+    const handleDelete = async () => {
         setIsDeleting(true);
         try {
-            e.preventDefault();
-            deleteVideos(selectedVideoIds)
-                .then((response: Video[]) => {
-                    setVideos(response);
-                    setSelectedVideoIds(new Set());
-                })
-                .catch(console.error);
+            const response = await deleteVideos(selectedVideoIds);
+            setVideos(response);
+            setSelectedVideoIds(new Set());
+            setIsDeleteDialogOpen(false);
+        } catch (error) {
+            console.error(error);
         } finally {
             setIsDeleting(false);
         }
@@ -297,7 +303,7 @@ export default function VideoViewer() {
                     <Fab
                         variant="extended"
                         color="secondary"
-                        onClick={handleDelete}
+                        onClick={() => setIsDeleteDialogOpen(true)}
                         disabled={isDeleting}
                         aria-label={`Delete ${selectedVideoIds.size} selected items`}
                     >
@@ -341,8 +347,43 @@ export default function VideoViewer() {
                         )}
                     </Fab>
                 </Box>
-                
             )}
+
+            <Dialog
+                open={isDeleteDialogOpen}
+                onClose={() => {
+                    if (!isDeleting) {
+                        setIsDeleteDialogOpen(false);
+                    }
+                }}
+                aria-labelledby="delete-videos-dialog-title"
+                aria-describedby="delete-videos-dialog-description"
+            >
+                <DialogTitle id="delete-videos-dialog-title">
+                    Delete selected videos?
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="delete-videos-dialog-description">
+                        This will permanently delete {selectedVideoIds.size} selected {selectedVideoIds.size === 1 ? "video" : "videos"}.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setIsDeleteDialogOpen(false)}
+                        disabled={isDeleting}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleDelete}
+                        color="error"
+                        variant="contained"
+                        disabled={isDeleting}
+                    >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }
