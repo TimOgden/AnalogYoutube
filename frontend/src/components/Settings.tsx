@@ -4,7 +4,6 @@ import {
     Button,
     CircularProgress,
     Stack,
-    TextField,
     Typography,
 } from '@mui/material';
 import styles from '../components/styles/QRGenerator.module.less';
