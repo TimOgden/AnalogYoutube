@@ -1,12 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "../styles/QRGenerator.module.less";
 import { TextField } from "@mui/material";
 interface YoutubeQRGeneratorProps {
     onUrlsChange: (urls: string[]) => void;
+    resetVersion: number;
 }
 
-export default function YouTubeQRGenerator({ onUrlsChange }: YoutubeQRGeneratorProps) {
+export default function YouTubeQRGenerator({
+    onUrlsChange,
+    resetVersion,
+}: YoutubeQRGeneratorProps) {
     const [urls, setUrls] = useState("");
+
+    useEffect(() => {
+        setUrls("");
+        onUrlsChange([]);
+    }, [resetVersion, onUrlsChange]);
 
     return (
         <section className={styles.card}>

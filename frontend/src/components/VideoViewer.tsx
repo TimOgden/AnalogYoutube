@@ -31,9 +31,9 @@ type Video = {
 
 
 const SOURCE_ORDER: Video["source"][] = [
+    "youtube",
     "library",
     "local",
-    "youtube",
 ];
 
 const SOURCE_LABELS: Record<Video["source"], string> = {
