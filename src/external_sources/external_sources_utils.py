@@ -45,6 +45,7 @@ def _get_thumbnail(filepath: Path) -> Image.Image:
 
 def _save_thumbnail(thumbnail: Image.Image, video_id: str) -> Path:
     path = Path('media/thumbnails') / f'{video_id}.png'
+    path.parent.mkdir(parents=True, exist_ok=True)
     thumbnail.save(path)
     return path
 
