@@ -13,6 +13,7 @@ from pydantic import BaseModel
 import uvicorn
 
 from src import video_utils, youtube_utils, db_utils, local_files_utils
+from src.external_sources.models import DownloadableVideo
 
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
