@@ -4,7 +4,7 @@ import Library from "./Library";
 import { useState } from "react";
 import { CircularProgress, Fab } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
-import { regenerateCards } from "../api/qrGeneration";
+import { generateCards } from "../api/qrGeneration";
 import type { SelectedLibraryVideo } from "../api/library";
 
 
@@ -19,7 +19,7 @@ export default function QRGenerators() {
     const handleSubmit = async () => {
         setIsGenerating(true);
         try {
-            const blob = await regenerateCards(
+            const blob = await generateCards(
                 librarySelections,
                 localFiles,
                 youtubeUrls
