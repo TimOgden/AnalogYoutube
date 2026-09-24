@@ -3,6 +3,7 @@ import io
 import json
 import os
 import pathlib
+import subprocess
 import tempfile
 import zipfile
 
@@ -13,11 +14,10 @@ import uvicorn
 
 from src import video_utils, youtube_utils, db_utils, local_files_utils
 
-from fastapi import FastAPI, File, Form, UploadFile
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 
-from src.external_sources.models import LibraryVideo
 from src.video_models import Video
 
 load_dotenv(override=True)
@@ -161,6 +161,76 @@ async def regenerate_multi(request: MultiRegenerateRequest):
                     'attachment; filename="local-qr-codes.zip"'
             },
         )
+
+
+UPDATE_SCRIPT_PATH = pathlib.Path(
+    os.getenv('UPDATE_SCRIPT_PATH', '/opt/analog-youtube/deploy/update.sh')
+)
+UPDATE_TOKEN = os.getenv('UPDATE_TOKEN')
+
+
+def _authorize_update_request(token: str | None) -> None:
+    if not UPDATE_TOKEN or token != UPDATE_TOKEN:
+        raise HTTPException(status_code=403, detail='Update authorization required')
+
+
+@app.get('/api/checkUpdates')
+async def check_updates() -> dict[str, str | bool]:
+    try:
+        subprocess.run(
+            ['git', 'fetch', 'origin', '--tags'],
+            cwd=UPDATE_SCRIPT_PATH.parent.parent,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        )
+        latest_tag = subprocess.run(
+            ['git', 'tag', '--sort=-version:refname'],
+            cwd=UPDATE_SCRIPT_PATH.parent.parent,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=10,
+        ).stdout.splitlines()[0]
+        current_tag = subprocess.run(
+            ['git', 'describe', '--tags', '--exact-match', 'HEAD'],
+            cwd=UPDATE_SCRIPT_PATH.parent.parent,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        ).stdout.strip()
+    except (FileNotFoundError, IndexError, subprocess.SubprocessError) as error:
+        raise HTTPException(status_code=503, detail=f'Unable to check updates: {error}') from error
+
+    return {
+        'update_available': current_tag != latest_tag,
+        'current_tag': current_tag,
+        'latest_tag': latest_tag,
+    }
+
+
+@app.post('/api/update')
+async def update(authorization: str | None = Header(default=None)) -> dict[str, str]:
+    token = authorization.removeprefix('Bearer ').strip() if authorization else None
+    _authorize_update_request(token)
+
+    if not UPDATE_SCRIPT_PATH.is_file():
+        raise HTTPException(status_code=503, detail='Update script is not available')
+
+    try:
+        subprocess.Popen(
+            [str(UPDATE_SCRIPT_PATH), '--reboot'],
+            cwd=UPDATE_SCRIPT_PATH.parent.parent,
+            start_new_session=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except OSError as error:
+        raise HTTPException(status_code=503, detail=f'Unable to start update: {error}') from error
+
+    return {'status': 'update_started'}
 
 
 from src.external_sources import external_sources_utils

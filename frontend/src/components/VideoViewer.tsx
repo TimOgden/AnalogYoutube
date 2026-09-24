@@ -205,9 +205,11 @@ export default function VideoViewer() {
                                                     checked={selected}
                                                     tabIndex={-1}
                                                     disableRipple
-                                                    inputProps={{
-                                                        "aria-label":
-                                                            `Select ${video.title}`,
+                                                    slotProps={{
+                                                        input: {
+                                                            "aria-label":
+                                                                `Select ${video.title}`,
+                                                        },
                                                     }}
                                                 />
                                             </Box>
