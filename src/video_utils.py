@@ -53,7 +53,10 @@ def process_multi_submissions(conn: Connection, submissions: dict[str, list],
         html_files = []
         for source, ingestion_func in ingestion_funcs.items():
             source_submissions = submissions[source]
-            html_files.append(_process_submissions(conn, source_submissions, ingestion_func, output_dir))
+            if not source_submissions:
+                continue
+
+            html_files.extend(_process_submissions(conn, source_submissions, ingestion_func, output_dir))
         
         with zipfile.ZipFile(
             zip_buffer,
@@ -75,22 +78,24 @@ def _save_videos(con: Connection, videos: list[Video]) -> None:
         thumbnail_path,
         video_url,
         video_path,
-        author_name
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        author_name,
+        playlist_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(video_id) DO UPDATE SET
         title = excluded.title,
         source = excluded.source,
         thumbnail_path = excluded.thumbnail_path,
         video_url = excluded.video_url,
         video_path = excluded.video_path,
-        author_name = excluded.author_name;
+        author_name = excluded.author_name,
+        playlist_id = excluded.playlist_id;
     """
 
     param_list = []
     for video in videos:
         video_path = str(video.video_path) if video.video_path is not None else None
         param_list.append((video.video_id, video.title, video.source.value,
-                           str(video.thumbnail_path), video.video_url, video_path, video.author_name))
+                           str(video.thumbnail_path), video.video_url, video_path, video.author_name, video.playlist_id))
     con.executemany(sql, param_list)
 
 
@@ -107,6 +112,7 @@ def row_to_video(row: dict) -> Video:
     video_path = Path(row['video_path']) if row['video_path'] else None
     thumbnail_path = Path(row['thumbnail_path']) if row['thumbnail_path'] else None
     thumbnail_url = f'/api/videos/{row['video_id']}/thumbnail'
+    playlist_id = row['playlist_id']
 
     return Video(
         video_id=row['video_id'],
@@ -117,6 +123,7 @@ def row_to_video(row: dict) -> Video:
         video_url=row['video_url'],
         video_path=video_path,
         author_name=row['author_name'],
+        playlist_id=playlist_id,
     )
 
 

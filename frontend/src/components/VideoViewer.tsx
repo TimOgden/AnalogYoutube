@@ -24,6 +24,7 @@ type Video = {
     video_path: string | null;
     video_url: string | null;
     author_name: string | null;
+    playlist_id: string | null;
 };
 
 
@@ -60,13 +61,13 @@ export default function VideoViewer() {
             try {
                 e.preventDefault();
     
-                const blob = await regenerateCards(videos);
+                const blob = await regenerateCards(videos.filter((video) => selectedVideoIds.has(video.video_id)));
     
                 const downloadUrl = URL.createObjectURL(blob);
     
                 const a = document.createElement("a");
                 a.href = downloadUrl;
-                a.download = "youtube-cards.zip";
+                a.download = "cards.zip";
                 a.click();
     
                 URL.revokeObjectURL(downloadUrl);

@@ -16,6 +16,8 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
 from dotenv import load_dotenv
 
+from src.video_models import Video
+
 load_dotenv(override=True)
 
 
@@ -94,11 +96,6 @@ async def generate_external_source(request: SelectionGenerateRequest):
     )
 
 
-class Video(BaseModel):
-    source: str
-    video_id: str
-
-
 class MultiGenerateRequest(BaseModel):
     videos: list[Video]
 
@@ -106,9 +103,9 @@ class MultiGenerateRequest(BaseModel):
 @app.post('/api/generate/multi')
 async def generate_multi(request: MultiGenerateRequest):
     ingestion_funcs = {
-        'youtube': youtube_utils.ingest_video,
+        'youtube': youtube_utils.ingest_video_by_id,
         'library': external_sources_utils.ingest_video,
-        'local': local_files_utils.ingest_video,
+        'local': local_files_utils.ingest_video_by_id,
     }
     source_submissions = {}
     for source in ingestion_funcs:

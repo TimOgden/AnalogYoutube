@@ -1,4 +1,5 @@
 import io
+import logging
 import shutil
 import subprocess
 import uuid
@@ -11,6 +12,9 @@ from src import thumbnail_utils
 from src.consts import MEDIA_PATH
 from fastapi import UploadFile
 from pathlib import Path
+
+
+logger = logging.getLogger(__name__)
 
 
 def _title_from_filename(filename: Path | str) -> str:
@@ -128,5 +132,18 @@ def ingest_video(file: UploadFile) -> Video:
         thumbnail_path=thumbnail_path,
         video_url=None,
         video_path=filepath,
+        author_name=None,
+    )
+
+
+def ingest_video_by_id(video: Video) -> Video:
+    logger.info(f'Ingesting video {video.title} of source local...')
+    return Video(
+        video_id=video.video_id,
+        title=video.title,
+        source=VideoSource.LOCAL,
+        thumbnail_path=video.thumbnail_path,
+        video_url=video.video_url,
+        video_path=video.video_path,
         author_name=None,
     )

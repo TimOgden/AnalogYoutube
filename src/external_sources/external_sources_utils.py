@@ -1,4 +1,5 @@
 import collections
+import logging
 from pathlib import Path
 import tempfile
 
@@ -12,7 +13,10 @@ from src.video_models import Video, VideoSource
 
 SOURCES = {
     'archive.org': ArchiveOrgSource(),
+    'library': ArchiveOrgSource(),
 }
+
+logger = logging.getLogger(__name__)
 
 
 def _save_media(video: DownloadableVideo) -> Path:
@@ -46,7 +50,8 @@ def _save_thumbnail(thumbnail: Image.Image, video_id: str) -> Path:
 
 
 def ingest_video(video: DownloadableVideo) -> Video:
-    video_id = video.id
+    logger.info(f'Ingesting video {video.video_id} of source {video.source}...')
+    video_id = video.video_id
     filepath = _save_media(video)
     thumbnail = _get_thumbnail(filepath)
     thumbnail_path = _save_thumbnail(thumbnail, video_id)
@@ -59,6 +64,7 @@ def ingest_video(video: DownloadableVideo) -> Video:
         video_url=video.external_url,
         video_path=filepath,
         author_name=video.source,
+        playlist_id=video.playlist_id,
     )
 
 
@@ -76,6 +82,8 @@ def _populate_library(config: dict) -> LIBRARY:
 
             playlist = Playlist(id=identifier, display_name=identifier_values.get('displayName', identifier),
                                 videos=videos)
+            for video in videos:
+                video.playlist_id = identifier
             library[source_name][identifier] = playlist
     return library
 

@@ -16,9 +16,9 @@ class ExternalItem:
     videos: list[DownloadableVideo] = field(default_factory=list)
 
 
-@dataclass(frozen=True)
+@dataclass
 class DownloadableVideo:
-    id: str
+    video_id: str
     title: str
     source: str
     playlist_id: str | None

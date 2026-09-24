@@ -30,7 +30,7 @@ class ArchiveOrgSource:
 
             video_name = file['name'].replace(' ', '+')
             videos.append(DownloadableVideo(
-                id=file['sha1'],
+                video_id=file['sha1'],
                 title=str(Path(file['name']).with_suffix('')),
                 source='archive.org',
                 download_url=None,

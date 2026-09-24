@@ -38,6 +38,7 @@ export async function submitFiles(files: File[]) {
 interface Video {
     source: string;
     video_id: string;
+    playlist_id: string | null;
 }
 
 export async function regenerateCards(videos: Video[]) {

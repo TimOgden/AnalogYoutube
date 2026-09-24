@@ -61,20 +61,19 @@ export default function Library() {
     );
     const lastSelectedVideo = useRef<LastSelectedVideo | null>(null);
 
-    const getVideoKey = (source: string, collection: string, videoId: string) =>
-        `${source}-${collection}-${videoId}`;
+    const getVideoKey = (source: string, collection: string, videoIndex: number) =>
+        `${source}-${collection}-${videoIndex}`;
 
     const selectVideo = (
         source: string,
         collection: string,
         videoIndex: number,
-        videos: LibraryVideo[],
         shiftKey: boolean
     ) => {
         const currentVideoKey = getVideoKey(
             source,
             collection,
-            videos[videoIndex].id
+            videoIndex
         );
         const previousSelection = lastSelectedVideo.current;
         const shouldUseRange =
@@ -102,7 +101,7 @@ export default function Library() {
                 const videoKey = getVideoKey(
                     source,
                     collection,
-                    videos[index].id
+                    index
                 );
 
                 if (shouldDeselect) {
@@ -121,8 +120,8 @@ export default function Library() {
         collection: string,
         videos: LibraryVideo[]
     ) => {
-        const videoKeys = videos.map((video) =>
-            getVideoKey(source, collection, video.id)
+        const videoKeys = videos.map((_, videoIndex) =>
+            getVideoKey(source, collection, videoIndex)
         );
         const allSelected = videoKeys.every((videoKey) =>
             selectedVideos.has(videoKey)
@@ -170,7 +169,9 @@ export default function Library() {
                 ([source, collections]) =>
                     Object.entries(collections).flatMap(([collection, playlist]) =>
                         playlist.videos.filter((video) =>
-                            selectedVideos.has(getVideoKey(source, collection, video.id))
+                            selectedVideos.has(
+                                getVideoKey(source, collection, playlist.videos.indexOf(video))
+                            )
                         ).map((video) => ({
                             ...video,
                             playlist_id: playlist.id,
@@ -252,9 +253,13 @@ export default function Library() {
                                 {Object.entries(collections).map(
                                     ([collection, playlist]) => {
                                         const selectedCount = playlist.videos.filter((video) =>
-                                            selectedVideos.has(
-                                                getVideoKey(source, collection, video.id)
+                                                            selectedVideos.has(
+                                            getVideoKey(
+                                                source,
+                                                collection,
+                                                playlist.videos.indexOf(video)
                                             )
+                                        )
                                         ).length;
                                         const allSelected =
                                             playlist.videos.length > 0 &&
@@ -367,7 +372,7 @@ export default function Library() {
                                                             const videoKey = getVideoKey(
                                                                 source,
                                                                 collection,
-                                                                video.id
+                                                                videoIndex
                                                             );
                                                             const isSelected = selectedVideos.has(
                                                                 videoKey
@@ -383,7 +388,6 @@ export default function Library() {
                                                                         source,
                                                                         collection,
                                                                         videoIndex,
-                                                                        playlist.videos,
                                                                         event.shiftKey
                                                                     )
                                                                 }
@@ -404,7 +408,6 @@ export default function Library() {
                                                                                 source,
                                                                                 collection,
                                                                                 videoIndex,
-                                                                                playlist.videos,
                                                                                 event.shiftKey
                                                                             );
                                                                         }}

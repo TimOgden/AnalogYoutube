@@ -96,3 +96,9 @@ def ingest_video(url: str) -> Video:
         video_url=url,
         author_name=metadata['author_name'],
     )
+
+
+def ingest_video_by_id(video: Video) -> Video:
+    logger.info(f'Ingesting video {video.video_id} of source {video.source}...')
+    url = f'https://youtube.com/watch?v={video.video_id}'
+    return ingest_video(url)

@@ -21,7 +21,7 @@ class VideoSource(str, Enum):
     LIBRARY = 'library'
 
 
-@dataclass(frozen=True)
+@dataclass
 class Video:
     video_id: str
     title: str
@@ -31,5 +31,7 @@ class Video:
     video_path: Path | None = None
     video_url: str | None = field(default=None)
     author_name: str | None = field(default=None)
+    playlist_id: str | None = None
+    external_url: str | None = None
 
     
