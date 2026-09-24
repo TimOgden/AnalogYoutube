@@ -25,7 +25,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential python3-dev \
     ffmpeg libsm6 libxext6 \
     python3-opencv \
-    libxcb1 libxcb-shm0 libxcb-shape0 libxcb-xfixes0 \
     && rm -rf /var/lib/apt/lists/*
     
 COPY requirements.txt .
@@ -35,6 +34,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src /app/src/
 COPY schema /app/schema/
 COPY templates /app/templates/
+COPY config /app/config/
 COPY --from=frontend-build /frontend/dist /app/frontend-dist
 
 EXPOSE 8000
