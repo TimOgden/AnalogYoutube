@@ -3,8 +3,13 @@ import styles from "../styles/QRGenerator.module.less";
 import { Button, CircularProgress, TextField } from "@mui/material";
 import { submitUrls } from '../../api/qrGeneration.ts';
 
-export default function YouTubeQRGenerator() {
-    const [isGenerating, setIsGenerating] = useState(false);
+
+interface YoutubeQRGeneratorProps {
+    isGenerating: boolean;
+    setIsGenerating: (isGenerating: boolean) => void;
+}
+
+export default function YouTubeQRGenerator({ isGenerating, setIsGenerating }: YoutubeQRGeneratorProps) {
     const [urls, setUrls] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {

@@ -5,8 +5,14 @@ import { submitFiles } from "../../api/qrGeneration";
 import { Box, Button, CircularProgress, IconButton, Paper, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-export default function LocalUploadQRGenerator() {
-    const [isGenerating, setIsGenerating] = useState(false);
+
+interface LocalUploadQRGenerator {
+    isGenerating: boolean;
+    setIsGenerating: (isGenerating: boolean) => void;
+}
+
+
+export default function LocalUploadQRGenerator({ isGenerating, setIsGenerating }: LocalUploadQRGenerator) {
     const [files, setFiles] = useState<File[]>([]);
 
     function addFiles(newFiles: File[]) {

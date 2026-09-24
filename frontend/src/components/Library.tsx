@@ -50,8 +50,13 @@ type LastSelectedVideo = {
 };
 
 
-export default function Library() {
-    const [isGenerating, setIsGenerating] = useState(false);
+interface LibraryProps {
+    isGenerating: boolean;
+    setIsGenerating: (isGenerating: boolean) => void;
+}
+
+
+export default function Library({ isGenerating, setIsGenerating }: LibraryProps) {
     const [library, setLibrary] = useState<LibraryData | null>(null);
     const [selectedVideos, setSelectedVideos] = useState<Set<string>>(
         new Set()
