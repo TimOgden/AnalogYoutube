@@ -80,6 +80,29 @@ def process_multi_submissions(conn: Connection, submissions: dict[str, list],
     return zip_buffer
 
 
+def process_regenerate_submissions(
+        conn: Connection,
+        submissions: list[Video],
+) -> io.BytesIO:
+    zip_buffer = io.BytesIO()
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_dir = pathlib.Path(temp_dir)
+        videos = [get_video(conn, submission.video_id) for submission in submissions]
+        html_files = _to_html_files(videos, output_dir)
+
+        with zipfile.ZipFile(
+                zip_buffer,
+                mode="w",
+                compression=zipfile.ZIP_DEFLATED,
+        ) as archive:
+            for file_path in html_files:
+                archive.write(file_path, arcname=file_path.name)
+
+    zip_buffer.seek(0)
+    return zip_buffer
+
+
 def _save_videos(con: Connection, videos: list[Video]) -> None:
     sql = """INSERT INTO videos (
         video_id,

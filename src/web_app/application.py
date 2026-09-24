@@ -151,18 +151,8 @@ class MultiRegenerateRequest(BaseModel):
 
 @app.post('/api/regenerate/multi')
 async def regenerate_multi(request: MultiRegenerateRequest):
-    ingestion_funcs = {
-        'youtube': youtube_utils.ingest_video_by_id,
-        'library': external_sources_utils.ingest_video,
-        'local': local_files_utils.ingest_video_by_id,
-    }
-    source_submissions = {}
-    for source in ingestion_funcs:
-        source_submissions[source] = [video for video in request.videos if video.source == source]
-
     with db_utils.get_connection() as conn:
-        zip_buffer = video_utils.process_multi_submissions(conn, source_submissions,
-                                                           ingestion_funcs=ingestion_funcs)
+        zip_buffer = video_utils.process_regenerate_submissions(conn, request.videos)
     return StreamingResponse(
             zip_buffer,
             media_type="application/zip",
