@@ -1,59 +1,32 @@
 import styles from "../styles/QRGenerator.module.less";
 import FileUpload from "../common/FileUpload";
-import { useState, type FormEvent } from "react";
-import { submitFiles } from "../../api/qrGeneration";
-import { Box, Button, CircularProgress, IconButton, Paper, Typography } from "@mui/material";
+import { useState } from "react";
+import { Box, IconButton, Paper, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
 
 interface LocalUploadQRGenerator {
-    isGenerating: boolean;
-    setIsGenerating: (isGenerating: boolean) => void;
+    onFilesChange: (files: File[]) => void;
 }
 
 
-export default function LocalUploadQRGenerator({ isGenerating, setIsGenerating }: LocalUploadQRGenerator) {
+export default function LocalUploadQRGenerator({ onFilesChange }: LocalUploadQRGenerator) {
     const [files, setFiles] = useState<File[]>([]);
 
     function addFiles(newFiles: File[]) {
-        setFiles((currentFiles) => [
-            ...currentFiles,
-            ...newFiles,
-        ]);
+        setFiles((currentFiles) => {
+            const updatedFiles = [...currentFiles, ...newFiles];
+            onFilesChange(updatedFiles);
+            return updatedFiles;
+        });
     }
 
     function removeFile(fileToRemove: File) {
-        setFiles((currentFiles) =>
-            currentFiles.filter(
-                (file) => file !== fileToRemove,
-            ),
-        );
-    }
-
-    async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-        setIsGenerating(true);
-        try {
-            e.preventDefault();
-            if (!files || files.length === 0) {
-                alert("Please upload at least one file.");
-                return;
-            }
-
-            const blob = await submitFiles(files);
-            if (!blob || blob.size === 0) {
-                alert("No files were returned from the server.");
-                return;
-            }
-
-            const downloadUrl = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = downloadUrl;
-            a.download = "local-upload-cards.zip";
-            a.click();
-            URL.revokeObjectURL(downloadUrl);
-        } finally {
-            setIsGenerating(false);
-        }
+        setFiles((currentFiles) => {
+            const updatedFiles = currentFiles.filter((file) => file !== fileToRemove);
+            onFilesChange(updatedFiles);
+            return updatedFiles;
+        });
     }
 
     return (
@@ -64,7 +37,7 @@ export default function LocalUploadQRGenerator({ isGenerating, setIsGenerating }
                 Upload local files below to generate printable QR cards.
             </p>
 
-            <form onSubmit={handleSubmit} className={styles.form}>
+            <form className={styles.form}>
                 <FileUpload onFilesSelected={addFiles} />
                 <Paper
                     variant="outlined"
@@ -125,19 +98,6 @@ export default function LocalUploadQRGenerator({ isGenerating, setIsGenerating }
                         </Box>
                     )}
                 </Paper>
-
-                <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={!files || files.length === 0 || isGenerating}
-                    startIcon={
-                        isGenerating
-                            ? <CircularProgress size={18} color="inherit" />
-                            : undefined
-                    }
-                >
-                    {isGenerating ? "Generating Cards..." : "Generate Cards"}
-                </Button>
             </form>
         </section>
     );

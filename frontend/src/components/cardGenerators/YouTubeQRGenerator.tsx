@@ -1,41 +1,12 @@
 import { useState } from "react";
 import styles from "../styles/QRGenerator.module.less";
-import { Button, CircularProgress, TextField } from "@mui/material";
-import { submitUrls } from '../../api/qrGeneration.ts';
-
-
+import { TextField } from "@mui/material";
 interface YoutubeQRGeneratorProps {
-    isGenerating: boolean;
-    setIsGenerating: (isGenerating: boolean) => void;
+    onUrlsChange: (urls: string[]) => void;
 }
 
-export default function YouTubeQRGenerator({ isGenerating, setIsGenerating }: YoutubeQRGeneratorProps) {
+export default function YouTubeQRGenerator({ onUrlsChange }: YoutubeQRGeneratorProps) {
     const [urls, setUrls] = useState("");
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        setIsGenerating(true);
-        try {
-            e.preventDefault();
-
-            const urlList = urls
-                .split("\n")
-                .map(url => url.trim())
-                .filter(Boolean);
-
-            const blob = await submitUrls(urlList, "youtube");
-
-            const downloadUrl = URL.createObjectURL(blob);
-
-            const a = document.createElement("a");
-            a.href = downloadUrl;
-            a.download = "youtube-cards.zip";
-            a.click();
-
-            URL.revokeObjectURL(downloadUrl);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
 
     return (
         <section className={styles.card}>
@@ -45,12 +16,21 @@ export default function YouTubeQRGenerator({ isGenerating, setIsGenerating }: Yo
                 Paste YouTube URLs below to generate printable QR cards.
             </p>
 
-            <form onSubmit={handleSubmit} className={styles.form}>
+            <form className={styles.form}>
 
                 <TextField
                     id="youtube-urls"
                     value={urls}
-                    onChange={(e) => setUrls(e.target.value)}
+                    onChange={(e) => {
+                        const value = e.target.value;
+                        setUrls(value);
+                        onUrlsChange(
+                            value
+                                .split("\n")
+                                .map((url) => url.trim())
+                                .filter(Boolean)
+                        );
+                    }}
                     placeholder={
                         "https://www.youtube.com/watch?v=dQw4w9WgXcQ\n" +
                         "https://youtu.be/..."
@@ -58,19 +38,6 @@ export default function YouTubeQRGenerator({ isGenerating, setIsGenerating }: Yo
                     multiline
                     fullWidth
                 />
-
-                <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={!urls.trim()}
-                    startIcon={
-                        isGenerating
-                            ? <CircularProgress size={18} color="inherit" />
-                            : undefined
-                    }
-                >
-                    {isGenerating ? "Generating Cards..." : "Generate Cards"}
-                </Button>
             </form>
         </section>
     );

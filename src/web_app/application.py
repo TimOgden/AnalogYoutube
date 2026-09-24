@@ -100,8 +100,8 @@ class MultiGenerateRequest(BaseModel):
     videos: list[Video]
 
 
-@app.post('/api/generate/multi')
-async def generate_multi(request: MultiGenerateRequest):
+@app.post('/api/regenerate/multi')
+async def regenerate_multi(request: MultiGenerateRequest):
     ingestion_funcs = {
         'youtube': youtube_utils.ingest_video_by_id,
         'library': external_sources_utils.ingest_video,

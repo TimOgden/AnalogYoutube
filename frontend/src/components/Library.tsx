@@ -1,10 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Box,
     Chip,
-    CircularProgress,
     Collapse,
-    Fab,
     Paper,
     Table,
     TableBody,
@@ -17,10 +15,9 @@ import {
 import Checkbox from "@mui/material/Checkbox";
 import IconButton from "@mui/material/IconButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import SendIcon from "@mui/icons-material/Send";
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import styles from '../components/styles/QRGenerator.module.less';
-import { getLibrary, submitSelections } from "../api/library";
+import { getLibrary, type SelectedLibraryVideo } from "../api/library";
 
 
 type Playlist = {
@@ -51,12 +48,11 @@ type LastSelectedVideo = {
 
 
 interface LibraryProps {
-    isGenerating: boolean;
-    setIsGenerating: (isGenerating: boolean) => void;
+    onSelectionChange: (videos: SelectedLibraryVideo[]) => void;
 }
 
 
-export default function Library({ isGenerating, setIsGenerating }: LibraryProps) {
+export default function Library({ onSelectionChange }: LibraryProps) {
     const [library, setLibrary] = useState<LibraryData | null>(null);
     const [selectedVideos, setSelectedVideos] = useState<Set<string>>(
         new Set()
@@ -162,15 +158,13 @@ export default function Library({ isGenerating, setIsGenerating }: LibraryProps)
         });
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        setIsGenerating(true);
-        try {
-            e.preventDefault();
-            if (!library) {
-                return;
-            }
+    useEffect(() => {
+        if (!library) {
+            onSelectionChange([]);
+            return;
+        }
 
-            const videos = Object.entries(library).flatMap(
+        const videos = Object.entries(library).flatMap(
                 ([source, collections]) =>
                     Object.entries(collections).flatMap(([collection, playlist]) =>
                         playlist.videos.filter((video) =>
@@ -184,35 +178,24 @@ export default function Library({ isGenerating, setIsGenerating }: LibraryProps)
                     )
             );
 
-            const blob = await submitSelections(videos);
-            const downloadUrl = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = downloadUrl;
-            a.download = "archive_org-cards.zip";
-            a.click();
-
-            URL.revokeObjectURL(downloadUrl);
-        } finally {
-            setIsGenerating(false);
-        }
-        
-    };
+        onSelectionChange(videos);
+    }, [library, selectedVideos, onSelectionChange]);
 
     useEffect(() => {
-        const loadLibrary = () => {
-            getLibrary()
-                .then((response: LibraryData) => {
-                    setLibrary(response);
-                    
-                    Object.entries(response).map((collection, playlist) => {
-                        const key = `${collection}-${playlist}`;
-                        setCollapsedCollections(new Set([...collapsedCollections,  key]));
-                    })
-                })
-                .catch(console.error);
-        };
-
-        loadLibrary();
+        getLibrary()
+            .then((response: LibraryData) => {
+                setLibrary(response);
+                setCollapsedCollections(
+                    new Set(
+                        Object.entries(response).flatMap(([source, collections]) =>
+                            Object.keys(collections).map(
+                                (collection) => `${source}-${collection}`
+                            )
+                        )
+                    )
+                );
+            })
+            .catch(console.error);
     }, []);
 
     return (
@@ -457,38 +440,6 @@ export default function Library({ isGenerating, setIsGenerating }: LibraryProps)
                             </Box>
                         )
                     )
-                )}
-
-                {selectedVideos.size > 0 && (
-                    <Fab
-                        variant="extended"
-                        color="primary"
-                        sx={{
-                            position: "fixed",
-                            right: 24,
-                            bottom: 24,
-                            zIndex: 1100,
-                        }}
-                        onClick={handleSubmit}
-                        disabled={isGenerating}
-                        aria-label={`Submit ${selectedVideos.size} selected videos`}
-                    >
-                        {isGenerating ? (
-                            <>
-                                <CircularProgress
-                                    size={20}
-                                    color="inherit"
-                                    sx={{ mr: 1 }}
-                                />
-                                Generating...
-                            </>
-                        ) : (
-                            <>
-                                <SendIcon sx={{ mr: 1 }} />
-                                Submit ({selectedVideos.size})
-                            </>
-                        )}
-                    </Fab>
                 )}
             </Box>
         </section>
