@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     linux-libc-dev \
     build-essential python3-dev \
+    libxcb1 libxcb-shm0 libxcb-shape0 libxcb-xfixes0 \
     && rm -rf /var/lib/apt/lists/*
     
 COPY requirements.txt .
