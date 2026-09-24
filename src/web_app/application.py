@@ -16,6 +16,7 @@ from src import video_utils, youtube_utils, db_utils, local_files_utils
 
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 from src.video_models import Video
@@ -234,6 +235,15 @@ app.include_router(player_router)
 app.include_router(tracking_router)
 app.include_router(library_router)
 app.include_router(video_router)
+FRONTEND_DIST = pathlib.Path(
+    os.getenv('FRONTEND_DIST', '/app/frontend-dist')
+)
+if FRONTEND_DIST.is_dir():
+    app.mount(
+        '/',
+        StaticFiles(directory=FRONTEND_DIST, html=True),
+        name='frontend',
+    )
 
 # chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --disable-session-crached-bubble --autoplay-policy=no-user-gesture-required http://127.0.0.1:1234/player
 # local: e8a2ed3b-90eb-4744-a873-de3b44e0b6ff

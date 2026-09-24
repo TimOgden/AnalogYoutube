@@ -10,7 +10,7 @@ echo "DISPLAY=$DISPLAY"
 echo "WAYLAND_DISPLAY=$WAYLAND_DISPLAY"
 echo "XDG_SESSION_TYPE=$XDG_SESSION_TYPE"
 
-while ! curl -sf http://127.0.0.1:8000/player >/dev/null; do
+while ! curl -sf http://127.0.0.1:8000/ >/dev/null; do
     echo "Waiting for FastAPI..."
     sleep 2
 done
