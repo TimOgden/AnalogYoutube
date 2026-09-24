@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
+from pydantic import BaseModel
+
 
 ExternalItemType = Literal["collection", "playlist", "video"]
 
@@ -32,6 +34,16 @@ class Playlist:
     id: str
     display_name: str | None
     videos: list[DownloadableVideo]
+
+
+class LibraryVideo(BaseModel):
+    id: str
+    title: str
+    source: str
+    download_url: str | None
+    thumbnail_url: str | None
+    external_url: str | None
+    playlist_id: str | None
 
 
 LIBRARY = dict[str, dict[str, Playlist]]

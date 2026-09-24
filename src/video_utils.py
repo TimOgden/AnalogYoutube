@@ -7,6 +7,9 @@ from typing import Callable
 from sqlite3 import Connection
 import tempfile
 import zipfile
+
+from fastapi import UploadFile
+from src.external_sources.models import LibraryVideo
 from src.qr_listener.qr_generator_utils import populate_qr_code_template
 from src.video_models import Video, VideoSource
 
@@ -41,6 +44,13 @@ def process_submissions(con: Connection, submissions: list,
 
     zip_buffer.seek(0)
     return zip_buffer
+
+
+def process_new_submissions(conn: Connection, submissions: list[LibraryVideo | str | UploadFile],
+                            ingestion_func: Callable, output_dir: Path) -> list[Path]:
+    html_files = _process_submissions(conn, submissions, ingestion_func, output_dir)
+    return html_files
+
 
 
 def process_multi_submissions(conn: Connection, submissions: dict[str, list],

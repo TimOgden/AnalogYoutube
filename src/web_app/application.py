@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 import io
+import json
 import os
 import pathlib
 import tempfile
@@ -12,10 +13,11 @@ import uvicorn
 
 from src import video_utils, youtube_utils, db_utils, local_files_utils
 
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
 from dotenv import load_dotenv
 
+from src.external_sources.models import LibraryVideo
 from src.video_models import Video
 
 load_dotenv(override=True)
@@ -96,12 +98,59 @@ async def generate_external_source(request: SelectionGenerateRequest):
     )
 
 
-class MultiGenerateRequest(BaseModel):
+@app.post('/api/generate/multi')
+async def generate_multi(
+    library_selections: str = Form("[]"),
+    youtube_urls: str = Form("[]"),
+    files: list[UploadFile] | None = File(None),
+):
+    zip_buffer = io.BytesIO()
+    selected_videos = json.loads(library_selections)
+    submitted_urls = json.loads(youtube_urls)
+    submitted_files = files or []
+            
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_dir = pathlib.Path(temp_dir)
+
+        html_files = []
+        with db_utils.get_connection() as conn:
+            external_files = video_utils.process_new_submissions(conn, selected_videos,
+                                                                 ingestion_func=external_sources_utils.ingest_video,
+                                                                 output_dir=output_dir)
+            local_files = video_utils.process_new_submissions(conn, submitted_files,
+                                                              ingestion_func=local_files_utils.ingest_video,
+                                                              output_dir=output_dir)
+            youtube_files = video_utils.process_new_submissions(conn, submitted_urls,
+                                                                ingestion_func=youtube_utils.ingest_video,
+                                                                output_dir=output_dir)
+            html_files.extend(external_files + local_files + youtube_files)
+
+        with zipfile.ZipFile(
+                zip_buffer,
+                mode="w",
+                compression=zipfile.ZIP_DEFLATED,
+            ) as archive:
+                for file_path in html_files:
+                    archive.write(file_path, arcname=file_path.name)
+
+    zip_buffer.seek(0)
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition":
+                'attachment; filename="qr-codes.zip"'
+        },
+    )
+        
+
+
+class MultiRegenerateRequest(BaseModel):
     videos: list[Video]
 
 
 @app.post('/api/regenerate/multi')
-async def regenerate_multi(request: MultiGenerateRequest):
+async def regenerate_multi(request: MultiRegenerateRequest):
     ingestion_funcs = {
         'youtube': youtube_utils.ingest_video_by_id,
         'library': external_sources_utils.ingest_video,
