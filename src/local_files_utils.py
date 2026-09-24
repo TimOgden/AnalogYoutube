@@ -1,8 +1,8 @@
 import io
+import hashlib
 import logging
 import shutil
 import subprocess
-import uuid
 from PIL import Image
 import cv2
 import tempfile
@@ -118,8 +118,19 @@ def _save_media(file: UploadFile, video_id: str) -> Path:
     return path
 
 
+def _get_file_hash(file: UploadFile) -> str:
+    digest = hashlib.sha256()
+    file.file.seek(0)
+
+    for chunk in iter(lambda: file.file.read(1024 * 1024), b''):
+        digest.update(chunk)
+
+    file.file.seek(0)
+    return digest.hexdigest()
+
+
 def ingest_video(file: UploadFile) -> Video:
-    video_id = str(uuid.uuid4())
+    video_id = _get_file_hash(file)
 
     thumbnail = get_thumbnail(file)
     thumbnail_path = thumbnail_utils.save_thumbnail(thumbnail, video_id)
@@ -132,18 +143,5 @@ def ingest_video(file: UploadFile) -> Video:
         thumbnail_path=thumbnail_path,
         video_url=None,
         video_path=filepath,
-        author_name=None,
-    )
-
-
-def ingest_video_by_id(video: Video) -> Video:
-    logger.info(f'Ingesting video {video.title} of source local...')
-    return Video(
-        video_id=video.video_id,
-        title=video.title,
-        source=VideoSource.LOCAL,
-        thumbnail_path=video.thumbnail_path,
-        video_url=video.video_url,
-        video_path=video.video_path,
         author_name=None,
     )
