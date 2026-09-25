@@ -5,6 +5,8 @@ set -euo pipefail
 PROJECT_DIR="/opt/analog-youtube"
 SERVICE_FILE="$PROJECT_DIR/deploy/analog-youtube.service"
 AUTOSTART_FILE="$PROJECT_DIR/deploy/analog-youtube-kiosk.desktop"
+UPDATE_SERVICE_FILE="$PROJECT_DIR/deploy/analog-youtube-update.service"
+UPDATE_PATH_FILE="$PROJECT_DIR/deploy/analog-youtube-update.path"
 
 if [[ $EUID -eq 0 ]]; then
     echo "Run this script as the regular Pi user, not root."
@@ -34,8 +36,18 @@ echo "Installing Docker service..."
 sudo cp "$SERVICE_FILE" \
     /etc/systemd/system/analog-youtube.service
 
+echo "Installing update service..."
+
+sudo cp "$UPDATE_SERVICE_FILE" \
+    /etc/systemd/system/analog-youtube-update.service
+
+sudo cp "$UPDATE_PATH_FILE" \
+    /etc/systemd/system/analog-youtube-update.path
+
 sudo systemctl daemon-reload
+
 sudo systemctl enable analog-youtube.service
+sudo systemctl enable analog-youtube-update.path
 
 echo "Installing Chromium autostart..."
 

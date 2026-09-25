@@ -1,0 +1,13 @@
+# /etc/systemd/system/analog-youtube-update.service
+
+[Unit]
+Description=Update Analog YouTube
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=togde
+WorkingDirectory=/opt/analog-youtube
+ExecStart=/opt/analog-youtube/deploy/update.sh

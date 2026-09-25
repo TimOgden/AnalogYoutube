@@ -3,14 +3,18 @@ services:
     build:
       context: .
       dockerfile: web-Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-unknown}
     container_name: analog-youtube-web
     ports:
       - "8000:8000"
     volumes:
       - ./data:/app/data
       - ./media:/app/media
+      - ./runtime:/app/runtime
     environment:
-      - UPDATE_SCRIPT_PATH=deploy/update.sh
+      APP_VERSION: ${APP_VERSION:-unknown}
+      UPDATE_SCRIPT_PATH: deploy/update.sh
     restart: unless-stopped
     
   scanner:

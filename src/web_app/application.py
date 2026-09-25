@@ -10,6 +10,7 @@ import zipfile
 import logging
 
 from pydantic import BaseModel
+import requests
 import uvicorn
 
 from src import video_utils, youtube_utils, db_utils, local_files_utils
@@ -18,6 +19,7 @@ from src.external_sources.models import DownloadableVideo
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from packaging.version import InvalidVersion, Version
 from dotenv import load_dotenv
 
 from src.video_models import Video
@@ -168,63 +170,67 @@ async def regenerate_multi(request: MultiRegenerateRequest):
 UPDATE_SCRIPT_PATH = pathlib.Path(
     os.getenv('UPDATE_SCRIPT_PATH', '/opt/analog-youtube/deploy/update.sh')
 )
+LATEST_RELEASE_URL = (
+    "https://api.github.com/repos/TimOgden/AnalogYoutube/releases/latest"
+)
 
 
-@app.get('/api/checkUpdates')
-async def check_updates() -> dict[str, str | bool]:
+@app.get("/api/checkUpdates")
+def check_updates() -> dict[str, str | bool]:
+    current_version = os.environ.get("APP_VERSION", "unknown")
+
     try:
-        subprocess.run(
-            ['git', 'fetch', 'origin', '--tags'],
-            cwd=UPDATE_SCRIPT_PATH.parent.parent,
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=30,
+        response = requests.get(
+            LATEST_RELEASE_URL,
+            headers={
+                "Accept": "application/vnd.github+json",
+            },
+            timeout=10,
         )
-        latest_tag = subprocess.run(
-            ['git', 'tag', '--sort=-version:refname'],
-            cwd=UPDATE_SCRIPT_PATH.parent.parent,
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=10,
-        ).stdout.splitlines()[0]
-        current_tag = subprocess.run(
-            ['git', 'describe', '--tags', '--exact-match', 'HEAD'],
-            cwd=UPDATE_SCRIPT_PATH.parent.parent,
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=10,
-        ).stdout.strip()
-    except (FileNotFoundError, IndexError, subprocess.SubprocessError) as error:
-        logger.error(error)
-        raise HTTPException(status_code=503, detail=f'Unable to check updates: {error}') from error
+        response.raise_for_status()
+
+        release = response.json()
+        latest_version = release["tag_name"]
+
+    except (requests.RequestException, KeyError) as e:
+        logger.exception("Failed to check GitHub for updates.")
+
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to check for updates.",
+        ) from e
+
+    try:
+        update_available = (
+            current_version != "unknown"
+            and Version(latest_version.removeprefix("v"))
+            > Version(current_version.removeprefix("v"))
+        )
+    except InvalidVersion:
+        logger.warning(
+            "Could not compare versions: current=%r latest=%r",
+            current_version,
+            latest_version,
+        )
+        update_available = False
 
     return {
-        'update_available': current_tag != latest_tag,
-        'current_tag': current_tag,
-        'latest_tag': latest_tag,
+        "current_version": current_version,
+        "latest_version": latest_version,
+        "update_available": update_available,
     }
 
 
-@app.post('/api/update')
-async def update() -> dict[str, str]:
-    if not UPDATE_SCRIPT_PATH.is_file():
-        raise HTTPException(status_code=503, detail='Update script is not available')
+UPDATE_REQUEST = pathlib.Path("/runtime/update-request")
 
-    try:
-        subprocess.Popen(
-            [str(UPDATE_SCRIPT_PATH), '--reboot'],
-            cwd=UPDATE_SCRIPT_PATH.parent.parent,
-            start_new_session=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-    except OSError as error:
-        raise HTTPException(status_code=503, detail=f'Unable to start update: {error}') from error
 
-    return {'status': 'update_started'}
+@app.post("/api/update", status_code=202)
+def update():
+    UPDATE_REQUEST.touch()
+
+    return {
+        "status": "update_requested",
+    }
 
 
 from src.external_sources import external_sources_utils
