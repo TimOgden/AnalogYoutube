@@ -98,6 +98,7 @@ def _convert_to_mp4(file: UploadFile, output_path: Path) -> None:
 
 
 def _save_media(file: UploadFile, video_id: str) -> Path:
+    logger.info(f'Saving file {file.filename}...')
     path = MEDIA_PATH / "videos" / f"{video_id}.mp4"
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -105,11 +106,12 @@ def _save_media(file: UploadFile, video_id: str) -> Path:
 
     if suffix == ".mp4":
         file.file.seek(0)
-
+        logger.info(f'Writing file {file.filename} to disk...')
         with open(path, "wb") as f:
             shutil.copyfileobj(file.file, f)
 
     else:
+        logger.info(f'Converting file {file.filename} to mp4...')
         _convert_to_mp4(
             file=file,
             output_path=path,
@@ -133,6 +135,7 @@ def ingest_video(file: UploadFile) -> Video:
     video_id = _get_file_hash(file)
 
     thumbnail = get_thumbnail(file)
+    logger.info(f'Saving thumbnail for file {file.filename}...')
     thumbnail_path = thumbnail_utils.save_thumbnail(thumbnail, video_id)
     filepath = _save_media(file, video_id)
 
