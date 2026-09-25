@@ -40,7 +40,7 @@ COPY templates /app/templates/
 COPY config /app/config/
 COPY --from=frontend-build /frontend/dist /app/frontend-dist
 
-sudo chown -R "$USER:$USER" /app/
+RUN chmod 777 /app/
 
 EXPOSE 8000
 
