@@ -10,4 +10,5 @@ Requires=docker.service
 Type=oneshot
 User=togde
 WorkingDirectory=/opt/analog-youtube
+ExecStartPre=/usr/bin/rm -f /opt/analog-youtube/runtime/update-request
 ExecStart=/opt/analog-youtube/deploy/update.sh
