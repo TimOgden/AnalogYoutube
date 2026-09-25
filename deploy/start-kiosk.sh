@@ -34,6 +34,7 @@ sleep 2
 echo "Starting Chromium."
 
 exec /usr/bin/chromium \
+    --user-data-dir="$HOME/.config/analog-youtube-chromium" \
     --ozone-platform=wayland \
     --kiosk \
     --noerrdialogs \
