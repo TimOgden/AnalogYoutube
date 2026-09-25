@@ -26,16 +26,16 @@ def _title_from_filename(filename: Path | str) -> str:
     return filename.name
 
 
-def get_thumbnail(file: UploadFile) -> Image.Image:
-    with tempfile.TemporaryDirectory() as temp_dir:
-        local_path = Path(temp_dir) / file.filename
-        with open(local_path, 'wb') as f:
-            f.write(file.file.read())
+def get_thumbnail(filepath: Path) -> Image.Image:
+    frame_capture = cv2.VideoCapture(filepath)
 
-        frame_capture = cv2.VideoCapture(local_path)
+    frame_count = int(frame_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    target_frame = int(frame_count * 0.1)
 
-        ret, frame = frame_capture.read() 
-        frame_capture.release()
+    frame_capture.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
+    
+    ret, frame = frame_capture.read() 
+    frame_capture.release()
 
     if not ret:
         raise ValueError("Error getting frame.")
@@ -134,10 +134,10 @@ def _get_file_hash(file: UploadFile) -> str:
 def ingest_video(file: UploadFile) -> Video:
     video_id = _get_file_hash(file)
 
-    thumbnail = get_thumbnail(file)
+    filepath = _save_media(file, video_id)
+    thumbnail = get_thumbnail(filepath)
     logger.info(f'Saving thumbnail for file {file.filename}...')
     thumbnail_path = thumbnail_utils.save_thumbnail(thumbnail, video_id)
-    filepath = _save_media(file, video_id)
 
     return Video(
         video_id=video_id,
