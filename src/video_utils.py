@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 import io
+import os
 from pathlib import Path
 import pathlib
 from typing import Callable
@@ -9,6 +10,7 @@ import tempfile
 import zipfile
 
 from fastapi import UploadFile
+from src import db_utils
 from src.external_sources.models import LibraryVideo
 from src.qr_listener.qr_generator_utils import populate_qr_code_template
 from src.video_models import Video, VideoSource
@@ -166,3 +168,48 @@ def get_video(con: Connection, video_id: str) -> Video:
     result = cursor.fetchone()
 
     return row_to_video(result)
+
+
+def get_videos(conn: Connection, video_ids: list[str]) -> list[Video]:
+    if not video_ids:
+        return []
+
+    placeholders = ", ".join("?" for _ in video_ids)
+
+    cursor = conn.cursor()
+    cursor.execute(
+        f"""
+        SELECT *
+        FROM videos
+        WHERE video_id IN ({placeholders})
+        """,
+        video_ids,
+    )
+
+    return [row_to_video(row) for row in cursor.fetchall()]
+
+
+def delete_videos(video_ids: list[str]) -> None:
+    if not video_ids:
+        return
+
+    with db_utils.get_connection() as conn:
+        videos = get_videos(conn, video_ids)
+
+        placeholders = ", ".join("?" for _ in video_ids)
+
+        cursor = conn.cursor()
+        cursor.execute(
+            f"""
+            DELETE FROM videos
+            WHERE video_id IN ({placeholders})
+            """,
+            video_ids,
+        )
+
+    for video in videos:
+        if video.video_path:
+            video.video_path.unlink(missing_ok=True)
+
+        if video.thumbnail_path:
+            video.thumbnail_path.unlink(missing_ok=True)

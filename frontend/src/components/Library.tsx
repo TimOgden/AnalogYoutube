@@ -49,10 +49,14 @@ type LastSelectedVideo = {
 
 interface LibraryProps {
     onSelectionChange: (videos: SelectedLibraryVideo[]) => void;
+    resetVersion: number;
 }
 
 
-export default function Library({ onSelectionChange }: LibraryProps) {
+export default function Library({
+    onSelectionChange,
+    resetVersion,
+}: LibraryProps) {
     const [library, setLibrary] = useState<LibraryData | null>(null);
     const [selectedVideos, setSelectedVideos] = useState<Set<string>>(
         new Set()
@@ -61,6 +65,11 @@ export default function Library({ onSelectionChange }: LibraryProps) {
         new Set()
     );
     const lastSelectedVideo = useRef<LastSelectedVideo | null>(null);
+
+    useEffect(() => {
+        setSelectedVideos(new Set());
+        lastSelectedVideo.current = null;
+    }, [resetVersion]);
 
     const getVideoKey = (source: string, collection: string, videoIndex: number) =>
         `${source}-${collection}-${videoIndex}`;

@@ -23,6 +23,13 @@ def get_videos() -> list[Video]:
     return videos
 
 
+
+@router.delete('/api/videos')
+def delete_video(video_ids: list[str]) -> list[Video]:
+    video_utils.delete_videos(video_ids)
+    return get_videos()
+
+
 @router.get("/api/videos/{video_id}/thumbnail")
 def get_video_thumbnail(video_id: str) -> FileResponse:
     thumbnail_path = MEDIA_PATH / "thumbnails" / f"{video_id}.png"
