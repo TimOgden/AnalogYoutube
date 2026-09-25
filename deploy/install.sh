@@ -38,10 +38,6 @@ mkdir -p \
     "$PROJECT_DIR/media/videos" \
     "$PROJECT_DIR/media/thumbnails"
 
-sudo chown -R "$USER:$USER" \
-    "$PROJECT_DIR/runtime" \
-    "$PROJECT_DIR/media"
-
 echo "Installing Docker service..."
 
 sudo cp "$SERVICE_FILE" \
