@@ -9,6 +9,8 @@ services:
     volumes:
       - ./data:/app/data
       - ./media:/app/media
+    environment:
+      - UPDATE_SCRIPT_PATH=deploy/update.sh
     restart: unless-stopped
     
   scanner:
