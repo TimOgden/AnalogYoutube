@@ -198,6 +198,7 @@ async def check_updates() -> dict[str, str | bool]:
             timeout=10,
         ).stdout.strip()
     except (FileNotFoundError, IndexError, subprocess.SubprocessError) as error:
+        logger.error(error)
         raise HTTPException(status_code=503, detail=f'Unable to check updates: {error}') from error
 
     return {
