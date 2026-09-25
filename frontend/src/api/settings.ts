@@ -33,12 +33,9 @@ export async function checkUpdates(): Promise<UpdateStatus> {
 	return response.json();
 }
 
-export async function startUpdate(token: string): Promise<UpdateStartResponse> {
+export async function startUpdate(): Promise<UpdateStartResponse> {
 	const response = await fetch("/api/update", {
 		method: "POST",
-		headers: {
-			Authorization: `Bearer ${token}`,
-		},
 	});
 
 	if (!response.ok) {

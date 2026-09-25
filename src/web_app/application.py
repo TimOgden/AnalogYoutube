@@ -13,9 +13,11 @@ from pydantic import BaseModel
 import uvicorn
 
 from src import video_utils, youtube_utils, db_utils, local_files_utils
+from src.external_sources.models import DownloadableVideo
 
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 from src.video_models import Video
@@ -166,12 +168,6 @@ async def regenerate_multi(request: MultiRegenerateRequest):
 UPDATE_SCRIPT_PATH = pathlib.Path(
     os.getenv('UPDATE_SCRIPT_PATH', '/opt/analog-youtube/deploy/update.sh')
 )
-UPDATE_TOKEN = os.getenv('UPDATE_TOKEN')
-
-
-def _authorize_update_request(token: str | None) -> None:
-    if not UPDATE_TOKEN or token != UPDATE_TOKEN:
-        raise HTTPException(status_code=403, detail='Update authorization required')
 
 
 @app.get('/api/checkUpdates')
@@ -212,10 +208,7 @@ async def check_updates() -> dict[str, str | bool]:
 
 
 @app.post('/api/update')
-async def update(authorization: str | None = Header(default=None)) -> dict[str, str]:
-    token = authorization.removeprefix('Bearer ').strip() if authorization else None
-    _authorize_update_request(token)
-
+async def update() -> dict[str, str]:
     if not UPDATE_SCRIPT_PATH.is_file():
         raise HTTPException(status_code=503, detail='Update script is not available')
 
@@ -243,6 +236,15 @@ app.include_router(player_router)
 app.include_router(tracking_router)
 app.include_router(library_router)
 app.include_router(video_router)
+FRONTEND_DIST = pathlib.Path(
+    os.getenv('FRONTEND_DIST', '/app/frontend-dist')
+)
+if FRONTEND_DIST.is_dir():
+    app.mount(
+        '/',
+        StaticFiles(directory=FRONTEND_DIST, html=True),
+        name='frontend',
+    )
 
 # chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --disable-session-crached-bubble --autoplay-policy=no-user-gesture-required http://127.0.0.1:1234/player
 # local: e8a2ed3b-90eb-4744-a873-de3b44e0b6ff
