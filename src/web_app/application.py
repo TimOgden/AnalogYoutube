@@ -202,8 +202,8 @@ def check_updates() -> dict[str, str | bool]:
 
     try:
         update_available = (
-            current_version != "unknown"
-            and Version(latest_version.removeprefix("v"))
+            current_version == "unknown"
+            or Version(latest_version.removeprefix("v"))
             > Version(current_version.removeprefix("v"))
         )
     except InvalidVersion:
