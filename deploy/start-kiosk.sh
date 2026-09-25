@@ -11,14 +11,14 @@ echo "WAYLAND_DISPLAY=$WAYLAND_DISPLAY"
 echo "XDG_SESSION_TYPE=$XDG_SESSION_TYPE"
 echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
 
-# Wait for the graphical session
-while [[ -z "$WAYLAND_DISPLAY" ]] || \
-      [[ ! -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]]; do
-    echo "Waiting for Wayland..."
-    sleep 2
-done
+# # Wait for the graphical session
+# while [[ -z "$WAYLAND_DISPLAY" ]] || \
+#       [[ ! -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]]; do
+#     echo "Waiting for Wayland..."
+#     sleep 2
+# done
 
-echo "Wayland available."
+# echo "Wayland available."
 
 # Wait for FastAPI
 while ! curl -sf http://127.0.0.1:8000/player >/dev/null; do
