@@ -12,6 +12,7 @@ services:
       - ./data:/app/data
       - ./media:/app/media
       - ./runtime:/runtime
+    user: "1000:1000"
     environment:
       APP_VERSION: ${APP_VERSION:-unknown}
       UPDATE_SCRIPT_PATH: deploy/update.sh
