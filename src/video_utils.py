@@ -138,7 +138,7 @@ def _to_html_files(videos: list[Video], output_dir: Path) -> list[Path]:
     filepaths = []
     for video in videos:
         path = populate_qr_code_template(video, 
-                                         output_dir / f'{video.title.replace('/', '_')}.html')
+                                         output_dir / f'{video.title.replace('/', '_').replace(':', '_')}.html')
         filepaths.append(path)
     return filepaths
 
