@@ -40,6 +40,8 @@ COPY templates /app/templates/
 COPY config /app/config/
 COPY --from=frontend-build /frontend/dist /app/frontend-dist
 
+sudo chown -R "$USER:$USER" /app/
+
 EXPOSE 8000
 
 CMD ["uvicorn", "src.web_app.application:app", "--host", "0.0.0.0", "--port", "8000"]
