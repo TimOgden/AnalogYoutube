@@ -34,7 +34,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src /app/src/
 COPY schema /app/schema/
 COPY templates /app/templates/
-COPY media /app/media
+COPY media /app/media/
 COPY config /app/config/
 COPY --from=frontend-build /frontend/dist /app/frontend-dist
 
