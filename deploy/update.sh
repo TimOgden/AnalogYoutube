@@ -2,11 +2,13 @@
 
 set -euo pipefail
 
-UPDATE_REQUEST="/opt/analog-youtube/runtime/update-request"
+PROJECT_DIR="/opt/analog-youtube"
+UPDATE_REQUEST="$PROJECT_DIR/runtime/update-request"
+
+echo "Starting Analog YouTube update..."
+echo "Consuming update request..."
 
 rm -f "$UPDATE_REQUEST"
-
-PROJECT_DIR="/opt/analog-youtube"
 
 REBOOT_AFTER_UPDATE=false
 
