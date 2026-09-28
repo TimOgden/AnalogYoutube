@@ -156,8 +156,12 @@ def _send_cec_commands(
 
 def activate_tv() -> None:
     logger.info('Setting Pi as active HDMI source...')
-    if not _send_cec_commands(['on 0', 'as']):
+    if not _send_cec_commands(['on 0']):
         return
+
+    if not _send_cec_commands(['as']):
+        return
+    
     logger.info('Successfully activated TV.')
 
 
