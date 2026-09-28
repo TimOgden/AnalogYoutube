@@ -14,6 +14,23 @@ if [[ $EUID -eq 0 ]]; then
     exit 1
 fi
 
+echo "Installing h264ify Chromium extension..."
+
+CHROMIUM_POLICY_DIR="/etc/chromium/policies/managed"
+CHROMIUM_POLICY_FILE="$CHROMIUM_POLICY_DIR/analog-youtube.json"
+
+sudo mkdir -p "$CHROMIUM_POLICY_DIR"
+
+sudo tee "$CHROMIUM_POLICY_FILE" > /dev/null <<'EOF'
+{
+  "ExtensionInstallForcelist": [
+    "aleakchihdccplidncghkekgioiakgal;https://clients2.google.com/service/update2/crx"
+  ]
+}
+EOF
+
+sudo chmod 644 "$CHROMIUM_POLICY_FILE"
+
 echo "Installing system packages..."
 
 sudo apt-get update
