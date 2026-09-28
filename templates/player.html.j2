@@ -31,6 +31,57 @@
             justify-content: center;
             align-items: center;
         }
+
+        #player-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        #action-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
+            font-family: sans-serif;
+            font-size: 5rem;
+            color: white;
+
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+
+            width: 7rem;
+            height: 7rem;
+
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #progress-container {
+            position: absolute;
+            left: 3%;
+            right: 3%;
+            bottom: 3%;
+
+            height: 10px;
+
+            background: rgba(255, 255, 255, 0.35);
+            border-radius: 5px;
+
+            display: none;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 0;
+
+            background: white;
+            border-radius: inherit;
+        }
     </style>
 
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -43,6 +94,13 @@
         style="display: none; width: 100vw; height: 100vh;"
         autoplay
     ></video>
+    <div id="player-overlay">
+        <div id="action-icon"></div>
+
+        <div id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+    </div>
 </body>
 
 <script>
@@ -58,6 +116,43 @@
     let socker = null;
     let scrubInterval = null;
     let scrubStartedAt = null;
+
+    const actionIcon = document.getElementById("action-icon");
+    const progressContainer = document.getElementById("progress-container");
+    const progressBar = document.getElementById("progress-bar");
+
+    let overlayTimeout = null;
+
+    function showOverlay(icon, timeout=1500) {
+        if (source === "youtube") {
+            return;
+        }
+        actionIcon.textContent = icon;
+
+        actionIcon.style.display = "flex";
+        progressContainer.style.display = "block";
+
+        clearTimeout(overlayTimeout);
+
+        overlayTimeout = setTimeout(() => {
+            actionIcon.style.display = "none";
+            progressContainer.style.display = "none";
+        }, timeout);
+    }
+
+    function updateProgressBar() {
+        const duration = getDuration();
+        const currentTime = getCurrentTime();
+
+        if (!duration || !Number.isFinite(duration)) {
+            return;
+        }
+
+        progressBar.style.width =
+            `${(currentTime / duration) * 100}%`;
+    }
+
+    setInterval(updateProgressBar, 250);
 
     function getCurrentPlayer() {
         return source === "youtube" ? youtubePlayer : localPlayer;
@@ -271,8 +366,10 @@
             const isPaused = localPlayer.paused;
             if (!isPaused) {
                 localPlayer.pause();
+                showOverlay("Ⅱ");
             } else {
                 localPlayer.play();
+                showOverlay("▶");
             }
         }
     }
@@ -287,10 +384,12 @@
         switch (command) {
             case "play":
                 playVideo();
+                showOverlay("▶");
                 break;
 
             case "pause":
                 pauseVideo();
+                showOverlay("Ⅱ");
                 break;
 
             case "play_pause":
@@ -299,21 +398,26 @@
 
             case "seek_forward":
                 seekTo(getCurrentPlayer(), getCurrentTime() + 10);
+                showOverlay("»");
                 break;
 
             case "seek_backward":
                 seekTo(getCurrentPlayer(), Math.max(getCurrentTime() - 10, 0));
+                showOverlay("«");
                 break;
             case "scrub_forward_start":
                 startScrubbing(5);
+                showOverlay("»");
                 break;
 
             case "scrub_backward_start":
                 startScrubbing(-5);
+                showOverlay("«");
                 break;
 
             case "scrub_stop":
                 stopScrubbing();
+                showOverlay("▶");
                 break;
         }
     }
