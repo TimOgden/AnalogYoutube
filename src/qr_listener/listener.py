@@ -116,12 +116,14 @@ def connect() -> serial.Serial:
             sleep(SLEEP_TIME)
 
 
-def _send_cec_command(command: str, timeout: int = 10) -> None:
-    """Send a command to TV over HDMI-CEC"""
+def _send_cec_commands(
+    commands: list[str],
+    timeout: int = 10,
+) -> bool:
     try:
         result = subprocess.run(
             ["cec-client", "-s", "-d", "1", "-t", "p"],
-            input=f"{command}\n",
+            input="\n".join(commands) + "\n",
             text=True,
             capture_output=True,
             timeout=timeout,
@@ -130,10 +132,10 @@ def _send_cec_command(command: str, timeout: int = 10) -> None:
 
         if result.returncode != 0:
             logger.warning(
-                "HDMI-CEC command %r failed with exit code %s.\n"
+                "HDMI-CEC commands %r failed with exit code %s.\n"
                 "stdout:\n%s\n"
                 "stderr:\n%s",
-                command,
+                commands,
                 result.returncode,
                 result.stdout.strip(),
                 result.stderr.strip(),
@@ -145,25 +147,16 @@ def _send_cec_command(command: str, timeout: int = 10) -> None:
     except FileNotFoundError:
         logger.error("cec-client is not installed.")
     except subprocess.TimeoutExpired:
-        logger.warning("HDMI-CEC command %r timed out.", command)
+        logger.warning("HDMI-CEC commands %r timed out.", commands)
     except OSError:
-        logger.exception(
-            "Could not execute HDMI-CEC command %r.",
-            command,
-        )
+        logger.exception("Could not execute HDMI-CEC commands %r.", commands)
 
     return False
 
 
 def activate_tv() -> None:
-    logger.info('Waking TV...')
-    if not _send_cec_command('on 0'):
-        return
-
-    time.sleep(CEC_WAKE_DELAY)
-
     logger.info('Setting Pi as active HDMI source...')
-    if not _send_cec_command('as', timeout=30):
+    if not _send_cec_commands(['on 0', 'as']):
         return
     logger.info('Successfully activated TV.')
 
