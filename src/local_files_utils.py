@@ -57,6 +57,6 @@ def ingest_video(file: UploadFile) -> Video:
         source=VideoSource.LOCAL,
         thumbnail_path=thumbnail_path,
         video_url=None,
-        video_path=tmp_path,
+        video_path=filepath,
         author_name=None,
     )
