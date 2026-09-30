@@ -24,9 +24,12 @@ services:
     command: python -m src.qr_listener.listener
     restart: unless-stopped
 
+    volumes:
+      - /dev:/dev  
     devices:
-    - /dev/ttyACM0:/dev/ttyACM0
-    - /dev/cec0:/dev/cec0
+      - /dev/cec0:/dev/cec0
+    device_cgroup_rules:
+      - "c 166:* rwm"
 
     environment:
       PLAY_ENDPOINT: http://web:8000/api/play
@@ -43,8 +46,11 @@ services:
     command: python -m src.remote_listener.listener
     restart: unless-stopped
 
-    devices:
-    - /dev/input/by-id/usb-XING_WEI_2.4G_USB_USB_Composite_Device-if02-event-kbd:/dev/input/by-id/usb-XING_WEI_2.4G_USB_USB_Composite_Device-if02-event-kbd
+    volumes:
+      - /dev/input:/dev/input
+
+    device_cgroup_rules:
+      - "c 13:* rwm"
 
     environment:
       COMMANDS_ENDPOINT: http://web:8000/api/control
