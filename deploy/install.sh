@@ -42,11 +42,41 @@ sudo apt-get install -y \
     ca-certificates \
     python3
 
-if ! command -v docker >/dev/null 2>&1; then
-    echo "Docker is not installed."
-    echo "Install Docker Engine from Docker's Debian repository first."
-    exit 1
-fi
+
+echo "Installing Docker..."
+
+# Add Docker's official GPG key
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+
+sudo install -m 0755 -d /etc/apt/keyrings
+
+sudo curl -fsSL \
+    https://download.docker.com/linux/debian/gpg \
+    -o /etc/apt/keyrings/docker.asc
+
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add Docker's Debian repository
+sudo tee /etc/apt/sources.list.d/docker.sources > /dev/null <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/debian
+Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+sudo apt-get update
+
+sudo apt-get install -y \
+    docker-ce \
+    docker-ce-cli \
+    containerd.io \
+    docker-buildx-plugin \
+    docker-compose-plugin
+
+echo "Docker installed."
 
 sudo usermod -aG docker "$USER"
 
@@ -69,7 +99,15 @@ DISPLAY_CONNECTOR="${CONNECTED_HDMI#*-}"
 
 echo "Detected display: $DISPLAY_CONNECTOR"
 
-source "$PROJECT_DIR/deploy/display_config.env"
+DISPLAY_CONFIG="$PROJECT_DIR/deploy/display_config.env"
+DISPLAY_CONFIG_TEMPLATE="$PROJECT_DIR/deploy/display_config.env.template"
+
+if [[ ! -f "$DISPLAY_CONFIG" ]]; then
+    echo "No display configuration found. Creating from template..."
+    cp "$DISPLAY_CONFIG_TEMPLATE" "$DISPLAY_CONFIG"
+fi
+
+source "$DISPLAY_CONFIG"
 DISPLAY_MODE="${DISPLAY_CONNECTOR}:${DISPLAY_RESOLUTION}@${DISPLAY_REFRESH_RATE}D"
 echo "Setting to display mode: $DISPLAY_MODE..."
 
@@ -132,7 +170,7 @@ cp "$AUTOSTART_FILE" \
 echo "Building application containers..."
 
 cd "$PROJECT_DIR"
-docker compose build
+sudo docker compose build
 
 echo "Starting application..."
 
