@@ -1,7 +1,10 @@
 <!doctype html>
 <html>
 <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8"
+        name="referrer"
+        content="strict-origin-when-cross-origin"
+    >
     <title>Analog YouTube</title>
 
     <style>
@@ -332,14 +335,20 @@
                 disablekb: 1,
                 fs: 0,
                 playsinline: 1,
-                rel: 0
+                rel: 0,
+                origin: window.location.origin
             },
 
             events: {
                 onAutoplayBlocked: function () {
                     console.error("YouTube autoplay was blocked.");
                 },
-                onStateChange: onPlayerStateChanged
+                onStateChange: onPlayerStateChanged,
+                onError: function (event) {
+                    console.error(
+                        `YouTube player error: ${event.data}`
+                    );
+                }
             }
         });
 
