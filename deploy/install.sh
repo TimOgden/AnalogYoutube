@@ -162,7 +162,7 @@ cp "$AUTOSTART_FILE" \
 echo "Building application containers..."
 
 cd "$PROJECT_DIR"
-docker compose build
+sudo docker compose build
 
 echo "Starting application..."
 
