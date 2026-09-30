@@ -99,7 +99,15 @@ DISPLAY_CONNECTOR="${CONNECTED_HDMI#*-}"
 
 echo "Detected display: $DISPLAY_CONNECTOR"
 
-source "$PROJECT_DIR/deploy/display_config.env"
+DISPLAY_CONFIG="$PROJECT_DIR/deploy/display_config.env"
+DISPLAY_CONFIG_TEMPLATE="$PROJECT_DIR/deploy/display_config.env.template"
+
+if [[ ! -f "$DISPLAY_CONFIG" ]]; then
+    echo "No display configuration found. Creating from template..."
+    cp "$DISPLAY_CONFIG_TEMPLATE" "$DISPLAY_CONFIG"
+fi
+
+source "$DISPLAY_CONFIG"
 DISPLAY_MODE="${DISPLAY_CONNECTOR}:${DISPLAY_RESOLUTION}@${DISPLAY_REFRESH_RATE}D"
 echo "Setting to display mode: $DISPLAY_MODE..."
 
