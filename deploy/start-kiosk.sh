@@ -43,4 +43,4 @@ exec /usr/bin/chromium \
     --disable-session-crashed-bubble \
     --autoplay-policy=no-user-gesture-required \
     --password-store=basic \
-    http://127.0.0.1:8000/player
+    http://analog-youtube-raspberrypi:8000/player

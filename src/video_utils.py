@@ -4,6 +4,7 @@ import io
 import os
 from pathlib import Path
 import pathlib
+import re
 from typing import Callable
 from sqlite3 import Connection
 import tempfile
@@ -134,11 +135,16 @@ def _save_videos(con: Connection, videos: list[Video]) -> None:
     con.executemany(sql, param_list)
 
 
+def _sanitize_file_name(name: str) -> str:
+    return re.sub(r'[<>:"/\\|?*\x00-\x1F]', '_', name).strip()
+
+
 def _to_html_files(videos: list[Video], output_dir: Path) -> list[Path]:
     filepaths = []
     for video in videos:
+        video_title = _sanitize_file_name(video.title)
         path = populate_qr_code_template(video, 
-                                         output_dir / f'{video.title.replace('/', '_').replace(':', '_')}.html')
+                                         output_dir / f'{video_title}.html')
         filepaths.append(path)
     return filepaths
 
