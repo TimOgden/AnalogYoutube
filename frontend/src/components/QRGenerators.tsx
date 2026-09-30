@@ -15,6 +15,7 @@ export default function QRGenerators() {
     const [librarySelections, setLibrarySelections] = useState<
         SelectedLibraryVideo[]
     >([]);
+    const [resetVersion, setResetVersion] = useState(0);
 
     const handleSubmit = async () => {
         setIsGenerating(true);
@@ -31,6 +32,11 @@ export default function QRGenerators() {
             a.click();
 
             URL.revokeObjectURL(downloadUrl);
+            
+            setYoutubeUrls([]);
+            setLocalFiles([]);
+            setLibrarySelections([]);
+            setResetVersion((version) => version + 1);
         } finally {
             setIsGenerating(false);
         }
@@ -41,9 +47,18 @@ export default function QRGenerators() {
 
     return (
         <main>
-            <YouTubeQRGenerator onUrlsChange={setYoutubeUrls} />
-            <LocalUploadQRGenerator onFilesChange={setLocalFiles} />
-            <Library onSelectionChange={setLibrarySelections} />
+            <YouTubeQRGenerator
+                onUrlsChange={setYoutubeUrls}
+                resetVersion={resetVersion}
+            />
+            <LocalUploadQRGenerator
+                onFilesChange={setLocalFiles}
+                resetVersion={resetVersion}
+            />
+            <Library
+                onSelectionChange={setLibrarySelections}
+                resetVersion={resetVersion}
+            />
             {selectionCount > 0 && (
                     <Fab
                         variant="extended"

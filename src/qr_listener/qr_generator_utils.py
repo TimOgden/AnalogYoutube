@@ -64,6 +64,6 @@ def populate_qr_code_template(video: Video, output_path: pathlib.Path) -> pathli
         svg_url=image_to_data_uri(qr_code),
     )
 
-    with open(output_path, 'w') as f:
+    with open(output_path, 'w', encoding="utf-8") as f:
         f.write(html)
     return output_path

@@ -1,7 +1,7 @@
 export type UpdateStatus = {
 	update_available: boolean;
-	current_tag: string;
-	latest_tag: string;
+	current_version: string;
+	latest_version: string;
 };
 
 export type UpdateStartResponse = {

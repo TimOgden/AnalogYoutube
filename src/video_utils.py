@@ -1,14 +1,17 @@
 from dataclasses import dataclass, field
 from enum import Enum
 import io
+import os
 from pathlib import Path
 import pathlib
+import re
 from typing import Callable
 from sqlite3 import Connection
 import tempfile
 import zipfile
 
 from fastapi import UploadFile
+from src import db_utils
 from src.external_sources.models import LibraryVideo
 from src.qr_listener.qr_generator_utils import populate_qr_code_template
 from src.video_models import Video, VideoSource
@@ -132,11 +135,16 @@ def _save_videos(con: Connection, videos: list[Video]) -> None:
     con.executemany(sql, param_list)
 
 
+def _sanitize_file_name(name: str) -> str:
+    return re.sub(r'[<>:"/\\|?*\x00-\x1F]', '_', name).strip()
+
+
 def _to_html_files(videos: list[Video], output_dir: Path) -> list[Path]:
     filepaths = []
     for video in videos:
+        video_title = _sanitize_file_name(video.title)
         path = populate_qr_code_template(video, 
-                                         output_dir / f'{video.title.replace('/', '_')}.html')
+                                         output_dir / f'{video_title}.html')
         filepaths.append(path)
     return filepaths
 
@@ -166,3 +174,48 @@ def get_video(con: Connection, video_id: str) -> Video:
     result = cursor.fetchone()
 
     return row_to_video(result)
+
+
+def get_videos(conn: Connection, video_ids: list[str]) -> list[Video]:
+    if not video_ids:
+        return []
+
+    placeholders = ", ".join("?" for _ in video_ids)
+
+    cursor = conn.cursor()
+    cursor.execute(
+        f"""
+        SELECT *
+        FROM videos
+        WHERE video_id IN ({placeholders})
+        """,
+        video_ids,
+    )
+
+    return [row_to_video(row) for row in cursor.fetchall()]
+
+
+def delete_videos(video_ids: list[str]) -> None:
+    if not video_ids:
+        return
+
+    with db_utils.get_connection() as conn:
+        videos = get_videos(conn, video_ids)
+
+        placeholders = ", ".join("?" for _ in video_ids)
+
+        cursor = conn.cursor()
+        cursor.execute(
+            f"""
+            DELETE FROM videos
+            WHERE video_id IN ({placeholders})
+            """,
+            video_ids,
+        )
+
+    for video in videos:
+        if video.video_path:
+            video.video_path.unlink(missing_ok=True)
+
+        if video.thumbnail_path:
+            video.thumbnail_path.unlink(missing_ok=True)

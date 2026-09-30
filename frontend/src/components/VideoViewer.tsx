@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Box,
     Card,
@@ -8,11 +8,18 @@ import {
     Checkbox,
     Chip,
     CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
     Fab,
+    Button,
     Typography,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
-import { getVideos } from "../api/videos";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { getVideos, deleteVideos } from "../api/videos";
 import { regenerateCards } from "../api/qrGeneration";
 
 
@@ -30,9 +37,9 @@ type Video = {
 
 
 const SOURCE_ORDER: Video["source"][] = [
+    "youtube",
     "library",
     "local",
-    "youtube",
 ];
 
 const SOURCE_LABELS: Record<Video["source"], string> = {
@@ -45,6 +52,8 @@ const SOURCE_LABELS: Record<Video["source"], string> = {
 export default function VideoViewer() {
     const [videos, setVideos] = useState<Video[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(
         new Set(),
     );
@@ -58,24 +67,40 @@ export default function VideoViewer() {
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
-            setIsGenerating(true);
-            try {
-                e.preventDefault();
-    
-                const blob = await regenerateCards(videos.filter((video) => selectedVideoIds.has(video.video_id)));
-    
-                const downloadUrl = URL.createObjectURL(blob);
-    
-                const a = document.createElement("a");
-                a.href = downloadUrl;
-                a.download = "cards.zip";
-                a.click();
-    
-                URL.revokeObjectURL(downloadUrl);
-            } finally {
-                setIsGenerating(false);
-            }
-        };
+        setIsGenerating(true);
+        try {
+            e.preventDefault();
+
+            const blob = await regenerateCards(videos.filter((video) => selectedVideoIds.has(video.video_id)));
+
+            const downloadUrl = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = downloadUrl;
+            a.download = "cards.zip";
+            a.click();
+
+            URL.revokeObjectURL(downloadUrl);
+
+            setSelectedVideoIds(new Set());
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        try {
+            const response = await deleteVideos(selectedVideoIds);
+            setVideos(response);
+            setSelectedVideoIds(new Set());
+            setIsDeleteDialogOpen(false);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsDeleting(false);
+        }
+    }
 
     function toggleVideo(videoId: string) {
         setSelectedVideoIds((current) => {
@@ -263,36 +288,102 @@ export default function VideoViewer() {
             })}
 
             {selectedVideoIds.size > 0 && (
-                <Fab
-                    variant="extended"
-                    color="primary"
+                <Box
                     sx={{
                         position: "fixed",
                         right: 24,
                         bottom: 24,
                         zIndex: 1100,
+                        display: "flex",
+                        gap: 1.5,
+                        flexWrap: "wrap",
+                        justifyContent: "flex-end",
                     }}
-                    onClick={handleSubmit}
-                    disabled={isGenerating}
-                    aria-label={`Submit ${selectedVideoIds.size} selected items`}
                 >
-                    {isGenerating ? (
-                        <>
-                            <CircularProgress
-                                size={20}
-                                color="inherit"
-                                sx={{ mr: 1 }}
-                            />
-                            Generating...
-                        </>
-                    ) : (
-                        <>
-                            <SendIcon sx={{ mr: 1 }} />
-                            Submit ({selectedVideoIds.size})
-                        </>
-                    )}
-                </Fab>
+                    <Fab
+                        variant="extended"
+                        color="secondary"
+                        onClick={() => setIsDeleteDialogOpen(true)}
+                        disabled={isDeleting}
+                        aria-label={`Delete ${selectedVideoIds.size} selected items`}
+                    >
+                        {isDeleting ? (
+                            <>
+                                <CircularProgress
+                                    size={20}
+                                    color="inherit"
+                                    sx={{ mr: 1 }}
+                                />
+                                Deleting...
+                            </>
+                        ) : (
+                            <>
+                                <DeleteIcon sx={{ mr: 1 }} />
+                                Delete
+                            </>
+                        )}
+                    </Fab>
+                    <Fab
+                        variant="extended"
+                        color="primary"
+                        onClick={handleSubmit}
+                        disabled={isGenerating}
+                        aria-label={`Submit ${selectedVideoIds.size} selected items`}
+                    >
+                        {isGenerating ? (
+                            <>
+                                <CircularProgress
+                                    size={20}
+                                    color="inherit"
+                                    sx={{ mr: 1 }}
+                                />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <SendIcon sx={{ mr: 1 }} />
+                                Submit ({selectedVideoIds.size})
+                            </>
+                        )}
+                    </Fab>
+                </Box>
             )}
+
+            <Dialog
+                open={isDeleteDialogOpen}
+                onClose={() => {
+                    if (!isDeleting) {
+                        setIsDeleteDialogOpen(false);
+                    }
+                }}
+                aria-labelledby="delete-videos-dialog-title"
+                aria-describedby="delete-videos-dialog-description"
+            >
+                <DialogTitle id="delete-videos-dialog-title">
+                    Delete selected videos?
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="delete-videos-dialog-description">
+                        This will permanently delete {selectedVideoIds.size} selected {selectedVideoIds.size === 1 ? "video" : "videos"}.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setIsDeleteDialogOpen(false)}
+                        disabled={isDeleting}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleDelete}
+                        color="error"
+                        variant="contained"
+                        disabled={isDeleting}
+                    >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

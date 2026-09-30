@@ -62,8 +62,8 @@ export default function Settings() {
 
                     {updateStatus && (
                         <Typography>
-                            Current: {updateStatus.current_tag || 'untagged'}{' '}
-                            | Latest: {updateStatus.latest_tag}
+                            Current: {updateStatus.current_version || 'untagged'}{' '}
+                            | Latest: {updateStatus.latest_version}
                         </Typography>
                     )}
 
@@ -75,7 +75,7 @@ export default function Settings() {
                                 variant="contained"
                                 color="warning"
                             >
-                                {isStarting ? <CircularProgress size={20} /> : `Update to ${updateStatus.latest_tag}`}
+                                {isStarting ? <CircularProgress size={20} /> : `Update to ${updateStatus.latest_version}`}
                             </Button>
                         </>
                     )}

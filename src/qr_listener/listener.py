@@ -23,6 +23,10 @@ PLAY_ENDPOINT = os.getenv(
     "PLAY_ENDPOINT",
     "http://web:8000/api/play",
 )
+REQUEST_RECEIVED_ENDPOINT = os.getenv(
+    "REQUEST_RECEIVED_ENDPOINT",
+    "http://web:8000/api/requestReceived/video/{video_id}"
+)
 INPUT_DEVICE = os.getenv(
     "INPUT_DEVICE",
     "/dev/ttyACM0",
@@ -116,12 +120,14 @@ def connect() -> serial.Serial:
             sleep(SLEEP_TIME)
 
 
-def _send_cec_command(command: str, timeout: int = 10) -> None:
-    """Send a command to TV over HDMI-CEC"""
+def _send_cec_commands(
+    commands: list[str],
+    timeout: int = 10,
+) -> bool:
     try:
         result = subprocess.run(
             ["cec-client", "-s", "-d", "1", "-t", "p"],
-            input=f"{command}\n",
+            input="\n".join(commands) + "\n",
             text=True,
             capture_output=True,
             timeout=timeout,
@@ -130,10 +136,10 @@ def _send_cec_command(command: str, timeout: int = 10) -> None:
 
         if result.returncode != 0:
             logger.warning(
-                "HDMI-CEC command %r failed with exit code %s.\n"
+                "HDMI-CEC commands %r failed with exit code %s.\n"
                 "stdout:\n%s\n"
                 "stderr:\n%s",
-                command,
+                commands,
                 result.returncode,
                 result.stdout.strip(),
                 result.stderr.strip(),
@@ -145,26 +151,21 @@ def _send_cec_command(command: str, timeout: int = 10) -> None:
     except FileNotFoundError:
         logger.error("cec-client is not installed.")
     except subprocess.TimeoutExpired:
-        logger.warning("HDMI-CEC command %r timed out.", command)
+        logger.warning("HDMI-CEC commands %r timed out.", commands)
     except OSError:
-        logger.exception(
-            "Could not execute HDMI-CEC command %r.",
-            command,
-        )
+        logger.exception("Could not execute HDMI-CEC commands %r.", commands)
 
     return False
 
 
 def activate_tv() -> None:
-    logger.info('Waking TV...')
-    if not _send_cec_command('on 0'):
-        return
-
-    time.sleep(CEC_WAKE_DELAY)
-
     logger.info('Setting Pi as active HDMI source...')
-    if not _send_cec_command('as', timeout=30):
+    if not _send_cec_commands(['on 0']):
         return
+
+    if not _send_cec_commands(['as']):
+        return
+    
     logger.info('Successfully activated TV.')
 
 
@@ -187,8 +188,27 @@ def handle_scan(raw_scan: str) -> None:
 
     # Skip HDMI-CEC in local development
     if INPUT_DEVICE != 'stdin':
+        submit_request_received(source, video_id)
         activate_tv()
     submit_video(source, video_id)
+
+
+def submit_request_received(source: VideoSource, video_id: str) -> None:
+    if not video_id:
+        return
+
+    logger.info(f'Submitting request received notification to FastAPI for video {video_id}...')
+    try:
+        response = requests.head(REQUEST_RECEIVED_ENDPOINT.format(video_id=video_id), timeout=5)
+        if not response.ok:
+            logger.error(
+                'Request recieved submission failed: status=%s body=%s',
+                response.status_code,
+                response.text,
+            )
+        response.raise_for_status()
+    except requests.RequestException:
+        logger.error(f'Failed to submit request received notification for {REQUEST_RECEIVED_ENDPOINT}')
 
 
 def submit_video(source: VideoSource, video_id: str) -> None:

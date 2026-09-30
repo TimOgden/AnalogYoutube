@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 MAX_HEARTBEAT_DELTA = 10
 SAVE_INTERVAL = 30
 
-active_sessions: dict[str, WatchSession] = {}
+active_sessions: dict[str, 'WatchSession'] = {}
 
 class PlayingState(enum.Enum):
     INVALID = -1

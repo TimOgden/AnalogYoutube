@@ -15,7 +15,7 @@ class ExternalItem:
     source: str
     parent_id: str | None = None
     thumbnail_url: str | None = None
-    videos: list[DownloadableVideo] = field(default_factory=list)
+    videos: list['DownloadableVideo'] = field(default_factory=list)
 
 
 @dataclass

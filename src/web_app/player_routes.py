@@ -124,6 +124,25 @@ def get_local_video(video_id: str):
     )
 
 
+@router.head('/api/requestReceived/video/{video_id}')
+async def request_received(video_id: str) -> None:
+    with db_utils.get_connection() as con:
+        video = video_utils.get_video(con, video_id)
+
+    for websocket in connected_players:
+        try:
+            logger.info(f'Sending request received notification for {video_id} to websocket {websocket}...')
+            await broadcast(websocket, {
+                'type': 'request_received',
+                'source': video.source,
+                'video_id': video_id,
+                'video_title': video.title,
+            })
+        except Exception:
+            logger.error(f'Error sending request received notification for video {video_id}')
+            traceback.print_exc()
+
+
 @router.post('/api/play')
 async def play_video(request: PlayRequest) -> dict[str, str]:
     session = player_utils.create_watch_session(request.source, request.video_id)

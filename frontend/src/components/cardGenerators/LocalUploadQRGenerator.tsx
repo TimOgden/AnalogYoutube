@@ -1,17 +1,26 @@
 import styles from "../styles/QRGenerator.module.less";
 import FileUpload from "../common/FileUpload";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, IconButton, Paper, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
 
 interface LocalUploadQRGenerator {
     onFilesChange: (files: File[]) => void;
+    resetVersion: number;
 }
 
 
-export default function LocalUploadQRGenerator({ onFilesChange }: LocalUploadQRGenerator) {
+export default function LocalUploadQRGenerator({
+    onFilesChange,
+    resetVersion,
+}: LocalUploadQRGenerator) {
     const [files, setFiles] = useState<File[]>([]);
+
+    useEffect(() => {
+        setFiles([]);
+        onFilesChange([]);
+    }, [resetVersion, onFilesChange]);
 
     function addFiles(newFiles: File[]) {
         setFiles((currentFiles) => {
