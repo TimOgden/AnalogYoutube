@@ -4,6 +4,7 @@ import io
 import os
 from pathlib import Path
 import pathlib
+import re
 from typing import Callable
 from sqlite3 import Connection
 import tempfile
@@ -135,9 +136,7 @@ def _save_videos(con: Connection, videos: list[Video]) -> None:
 
 
 def _sanitize_file_name(name: str) -> str:
-    for invalid_char in ['/', ':', ',']:
-        name = name.replace(invalid_char, '_')
-    return name
+    return re.sub(r'[<>:"/\\|?*\x00-\x1F]', '_', name).strip()
 
 
 def _to_html_files(videos: list[Video], output_dir: Path) -> list[Path]:
