@@ -14,6 +14,18 @@ if [[ $EUID -eq 0 ]]; then
     exit 1
 fi
 
+CONFIG_FILE="/boot/firmware/config.txt"
+
+echo "Configuring HDMI-only audio..."
+
+if grep -qE '^[[:space:]]*dtparam=audio=' "$CONFIG_FILE"; then
+    sudo sed -i \
+        's/^[[:space:]]*dtparam=audio=.*/dtparam=audio=off/' \
+        "$CONFIG_FILE"
+else
+    echo 'dtparam=audio=off' | sudo tee -a "$CONFIG_FILE" > /dev/null
+fi
+
 echo "Installing h264ify Chromium extension..."
 
 CHROMIUM_POLICY_DIR="/etc/chromium/policies/managed"
