@@ -1,8 +1,8 @@
-An open-source Raspberry Pi project that lets kids watch parent-selected videos by scanning physical QR cards without the algorithmic recommendations or endless scrolling.
+An end-to-end open-source Raspberry Pi project that lets kids watch parent-selected videos by scanning physical QR cards without the algorithmic recommendations or endless scrolling.
 
 Supports youtube videos played directly from youtube, custom video uploads, and a curatable list of vintage cartoons from archive.org
 
-Inspired by [this instagram video](https://www.instagram.com/p/DUZAitUDxT3/), I wanted a way for parents to set this up for their kids without the 
+Inspired by [this instagram video](https://www.instagram.com/p/DUZAitUDxT3/), I wanted a way for parents to set this up for their kids without the required setup of a home media server
 
 ```bash
 # sudo apt update
