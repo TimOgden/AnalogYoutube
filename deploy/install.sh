@@ -190,4 +190,5 @@ sudo systemctl start analog-youtube.service
 
 echo
 echo "Installation complete."
-echo "Reboot the Pi so Docker permissions and kiosk autostart take effect."
+echo "Rebooting the Pi so Docker permissions and kiosk autostart take effect."
+sudo reboot
