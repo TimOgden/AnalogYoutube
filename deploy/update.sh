@@ -35,6 +35,13 @@ CURRENT_TAG="$(git describe --tags --exact-match HEAD 2>/dev/null || true)"
 if [[ "$CURRENT_TAG" == "$LATEST_TAG" ]]; then
     echo "Already running latest tag: $LATEST_TAG"
 
+    ENV_FILE="$PROJECT_DIR/.env"
+    if [[ -f "$ENV_FILE" ]] && grep -q '^APP_VERSION=' "$ENV_FILE"; then
+        sed -i "s/^APP_VERSION=.*/APP_VERSION=$LATEST_TAG/" "$ENV_FILE"
+    else
+        printf '\nAPP_VERSION=%s\n' "$LATEST_TAG" >> "$ENV_FILE"
+    fi
+
     if [[ "$REBOOT_AFTER_UPDATE" == true ]]; then
         /usr/bin/systemctl reboot
     fi
@@ -60,6 +67,13 @@ cp \
 chmod +x "$PROJECT_DIR/deploy/start-kiosk.sh"
 
 docker compose build --pull
+
+ENV_FILE="$PROJECT_DIR/.env"
+if [[ -f "$ENV_FILE" ]] && grep -q '^APP_VERSION=' "$ENV_FILE"; then
+    sed -i "s/^APP_VERSION=.*/APP_VERSION=$LATEST_TAG/" "$ENV_FILE"
+else
+    printf '\nAPP_VERSION=%s\n' "$LATEST_TAG" >> "$ENV_FILE"
+fi
 
 docker compose up -d --remove-orphans
 
