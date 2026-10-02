@@ -182,6 +182,26 @@ cp "$AUTOSTART_FILE" \
 echo "Building application containers..."
 
 cd "$PROJECT_DIR"
+
+echo "Checking for the latest release..."
+git fetch origin --tags
+
+LATEST_TAG="$(git tag --sort=-version:refname | head -n 1)"
+
+if [[ -z "$LATEST_TAG" ]]; then
+    echo "No git tags found" >&2
+    exit 1
+fi
+
+ENV_FILE="$PROJECT_DIR/.env"
+if [[ -f "$ENV_FILE" ]] && grep -q '^APP_VERSION=' "$ENV_FILE"; then
+    sed -i "s/^APP_VERSION=.*/APP_VERSION=$LATEST_TAG/" "$ENV_FILE"
+else
+    printf '\nAPP_VERSION=%s\n' "$LATEST_TAG" >> "$ENV_FILE"
+fi
+
+export APP_VERSION="$LATEST_TAG"
+echo "Building Analog YouTube $APP_VERSION..."
 sudo docker compose build
 
 echo "Starting application..."
@@ -190,4 +210,5 @@ sudo systemctl start analog-youtube.service
 
 echo
 echo "Installation complete."
-echo "Reboot the Pi so Docker permissions and kiosk autostart take effect."
+echo "Rebooting the Pi so Docker permissions and kiosk autostart take effect."
+/usr/bin/systemctl reboot
